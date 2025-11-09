@@ -1,36 +1,33 @@
-# Use Debian for building, distroless for production
-FROM node:20-bookworm AS base
+# Simple optimized Dockerfile for Next.js with standalone output
+FROM node:20-alpine
 
-FROM base AS deps
+# Install pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
+
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm@latest
+
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-FROM base AS builder
-WORKDIR /app
-RUN npm install -g pnpm@latest
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
+
+# Build arguments
 ENV NEXT_TELEMETRY_DISABLED=1
-
 ENV NEXT_PUBLIC_API_URL=https://api.sdigdata.com
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# Build the application
 RUN pnpm run build
 
-# Use distroless for minimal production image
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
-WORKDIR /app
-
+# Production environment
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-EXPOSE 3000
 ENV PORT=3000
 
-# Distroless runs as non-root by default
-CMD ["server.js"]
+EXPOSE 3000
+
+# Start the application
+CMD ["pnpm", "start"]

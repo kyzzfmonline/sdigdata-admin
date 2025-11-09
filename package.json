@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build --webpack",
     "dev": "next dev",
     "lint": "echo 'Linting disabled - use type-check instead'",
     "lint:fix": "echo 'Linting disabled - use type-check instead'",
@@ -89,6 +90,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
+    "@next/bundle-analyzer": "^16.0.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.1.9",
     "@testing-library/jest-dom": "^6.9.1",
