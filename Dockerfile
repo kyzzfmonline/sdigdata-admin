@@ -3,19 +3,20 @@ FROM node:20-bookworm AS base
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm install -g npm@latest
-RUN npm install  --verbose
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm@latest
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
+RUN npm install -g pnpm@latest
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
-ENV NEXT_PUBLIC_API_BASE_URL=https://api.sdigdata.com
+ENV NEXT_PUBLIC_API_URL=https://api.sdigdata.com
 
-RUN npm run build
+RUN pnpm run build
 
 # Use distroless for minimal production image
 FROM gcr.io/distroless/nodejs20-debian12 AS runner
