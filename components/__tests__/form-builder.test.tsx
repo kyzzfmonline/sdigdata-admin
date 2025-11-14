@@ -24,6 +24,20 @@ jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }))
 
+// Mock useAutosave
+const mockManualSave = jest.fn()
+jest.mock("@/hooks/use-autosave", () => ({
+  useAutosave: jest.fn(() => ({
+    isDirty: false,
+    isSaving: false,
+    lastSaved: null,
+    save: mockManualSave,
+    clearDraft: jest.fn(),
+    hasDraft: false,
+  })),
+  useDraft: jest.fn(() => null),
+}))
+
 // Mock framer-motion to avoid animation issues in tests
 jest.mock("framer-motion", () => ({
   motion: {
@@ -31,7 +45,7 @@ jest.mock("framer-motion", () => ({
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
   Reorder: {
-    Group: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Group: ({ children, onReorder, ...props }: any) => <div {...props}>{children}</div>,
     Item: ({ children, value, ...props }: any) => <div {...props}>{children}</div>,
   },
 }))
@@ -119,12 +133,8 @@ describe("FormBuilder", () => {
 
       render(<FormBuilder initialForm={initialForm} onSave={mockOnSave} />)
 
-      const deleteButtons = screen.getAllByRole("button")
-      const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg"))
-
-      if (deleteButton) {
-        await user.click(deleteButton)
-      }
+      const deleteButton = screen.getByRole("button", { name: /delete field/i })
+      await user.click(deleteButton)
 
       await waitFor(() => {
         expect(screen.queryByDisplayValue("Name")).not.toBeInTheDocument()
@@ -155,12 +165,12 @@ describe("FormBuilder", () => {
 
       render(<FormBuilder initialForm={initialForm} onSave={mockOnSave} />)
 
-      // Find duplicate button (copy icon)
-      const buttons = screen.getAllByRole("button")
-      // Typically the duplicate button is before the delete button
+      const duplicateButton = screen.getByRole("button", { name: /duplicate field/i })
+      await user.click(duplicateButton)
 
-      // This is a simplified test - in reality you'd need to identify the correct button
-      expect(screen.getByDisplayValue("Name")).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("Name (Copy)")).toBeInTheDocument()
+      })
     })
 
     it("should update field label when typing", async () => {
@@ -192,6 +202,50 @@ describe("FormBuilder", () => {
       await user.type(labelInput, "Full Name")
 
       expect(screen.getByDisplayValue("Full Name")).toBeInTheDocument()
+    })
+  })
+
+  describe("Options Editor", () => {
+    it("should add, update, and remove options for a select field", async () => {
+      const user = userEvent.setup()
+      render(<FormBuilder onSave={mockOnSave} />)
+
+      // Add a select field
+      const selectFieldButton = screen.getByRole("button", { name: /Add Dropdown field/i })
+      await user.click(selectFieldButton)
+
+      // Wait for the field to be added and click on it to edit
+      const fieldInput = await screen.findByDisplayValue(/Dropdown Field/i)
+      await user.click(fieldInput.parentElement!)
+
+      // Check for default options
+      expect(screen.getByDisplayValue("Option 1")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("option_1")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("Option 2")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("option_2")).toBeInTheDocument()
+
+      // Add a new option
+      const addOptionButton = screen.getByRole("button", { name: /Add Option/i })
+      await user.click(addOptionButton)
+      expect(screen.getByDisplayValue("Option 3")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("option_3")).toBeInTheDocument()
+
+      // Update an option
+      const labelInput = screen.getByDisplayValue("Option 1")
+      await user.clear(labelInput)
+      await user.type(labelInput, "First Option")
+      const valueInput = screen.getByDisplayValue("option_1")
+      await user.clear(valueInput)
+      await user.type(valueInput, "first_option")
+
+      expect(screen.getByDisplayValue("First Option")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("first_option")).toBeInTheDocument()
+
+      // Remove an option
+      const removeButtons = screen.getAllByRole("button", { name: /Remove option/i })
+      await user.click(removeButtons[0]) // Remove the first option
+
+      expect(screen.queryByDisplayValue("First Option")).not.toBeInTheDocument()
     })
   })
 
@@ -273,7 +327,7 @@ describe("FormBuilder", () => {
       const user = userEvent.setup()
       render(<FormBuilder onSave={mockOnSave} />)
 
-      const brandingButton = screen.getByRole("button", { name: /Branding & Theme/i })
+      const brandingButton = screen.getByRole("button", { name: /Branding/i })
       await user.click(brandingButton)
 
       // Branding editor should appear
@@ -306,7 +360,7 @@ describe("FormBuilder", () => {
 
       render(<FormBuilder initialForm={initialForm} onSave={mockOnSave} />)
 
-      const previewButton = screen.getByRole("button", { name: /Live Preview/i })
+      const previewButton = screen.getByRole("button", { name: /Preview/i })
       await user.click(previewButton)
 
       await waitFor(() => {
@@ -317,35 +371,9 @@ describe("FormBuilder", () => {
 
   describe("Keyboard Shortcuts", () => {
     it("should save form when Ctrl+S is pressed", async () => {
-      mockOnSave.mockResolvedValue(undefined)
-
-      const initialForm: Form = {
-        id: "form-1",
-        title: "Test Form",
-        organization_id: "org-1",
-        status: "draft",
-        version: 1,
-        schema: {
-          fields: [
-            {
-              id: "field-1",
-              type: "text",
-              label: "Name",
-              required: true,
-            },
-          ],
-        },
-        created_by: "user-1",
-        created_at: "2024-01-01T00:00:00Z",
-      }
-
-      render(<FormBuilder initialForm={initialForm} onSave={mockOnSave} />)
-
+      render(<FormBuilder onSave={mockOnSave} />)
       fireEvent.keyDown(window, { key: "s", ctrlKey: true })
-
-      await waitFor(() => {
-        expect(mockOnSave).toHaveBeenCalled()
-      })
+      expect(mockManualSave).toHaveBeenCalled()
     })
   })
 })

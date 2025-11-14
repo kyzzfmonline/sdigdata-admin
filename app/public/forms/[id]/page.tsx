@@ -21,10 +21,17 @@ export default function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
+    const abortController = new AbortController()
+
     const fetchForm = async () => {
       try {
         // Use the new public forms endpoint
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/forms/${params.id}`)
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/public/forms/${params.id}`,
+          {
+            signal: abortController.signal,
+          }
+        )
         const result = await response.json()
 
         if (result.success) {
@@ -33,17 +40,26 @@ export default function PublicFormPage() {
           throw new Error(result.message || "Failed to load form")
         }
       } catch (error: any) {
+        // Ignore abort errors
+        if (error.name === "AbortError") {
+          return
+        }
         toast({
           title: "Error",
           description: error.message || "Failed to load form",
           variant: "destructive",
         })
+        logger.error("Failed to fetch public form", { error, formId: params.id })
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchForm()
+
+    return () => {
+      abortController.abort()
+    }
   }, [params.id, toast])
 
   const handleSubmit = async (data: FormResponseData, attachments: Record<string, string>) => {

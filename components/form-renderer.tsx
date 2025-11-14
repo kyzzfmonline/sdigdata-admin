@@ -118,7 +118,9 @@ export function FormRenderer({
     switch (field.type) {
       case "text":
       case "textarea":
-        schema = z.string()
+        schema = z.string({
+          required_error: `${field.label} is required`,
+        })
         if (field.validation?.minLength) {
           schema = (schema as z.ZodString).min(
             field.validation.minLength,
@@ -140,12 +142,18 @@ export function FormRenderer({
         break
 
       case "email":
-        schema = z.string().email(`${field.label} must be a valid email address`)
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .email(`${field.label} must be a valid email address`)
         break
 
       case "phone":
         schema = z
-          .string()
+          .string({
+            required_error: `${field.label} is required`,
+          })
           .regex(
             /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
             `${field.label} must be a valid phone number`
@@ -153,7 +161,11 @@ export function FormRenderer({
         break
 
       case "url":
-        schema = z.string().url(`${field.label} must be a valid URL`)
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .url(`${field.label} must be a valid URL`)
         break
 
       case "number":
@@ -174,38 +186,52 @@ export function FormRenderer({
         break
 
       case "date":
-        schema = z.string().refine((val) => !isNaN(Date.parse(val)), {
-          message: `${field.label} must be a valid date`,
-        })
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .refine((val) => !isNaN(Date.parse(val)), {
+            message: `${field.label} must be a valid date`,
+          })
         break
 
       case "select":
         if (field.options && field.options.length > 0) {
-          schema = z.enum(field.options as [string, ...string[]], {
+          const optionValues = field.options.map((o) => o.value) as [string, ...string[]]
+          schema = z.enum(optionValues, {
+            required_error: `${field.label} is required`,
             errorMap: () => ({ message: `Please select a valid option for ${field.label}` }),
           })
         } else {
-          schema = z.string()
+          schema = z.string({
+            required_error: `${field.label} is required`,
+          })
         }
         break
 
       case "radio":
         // For radio buttons, allow any string if allowOther is enabled, otherwise restrict to options
         if (field.allowOther) {
-          schema = z.string().min(1, `${field.label} is required`)
+          schema = z
+            .string({
+              required_error: `${field.label} is required`,
+            })
+            .min(1, `${field.label} is required`)
         } else if (field.options && field.options.length > 0) {
-          schema = z.enum(field.options as [string, ...string[]], {
+          const optionValues = field.options.map((o) => o.value) as [string, ...string[]]
+          schema = z.enum(optionValues, {
+            required_error: `${field.label} is required`,
             errorMap: () => ({ message: `Please select a valid option for ${field.label}` }),
           })
         } else {
-          schema = z.string()
+          schema = z.string({
+            required_error: `${field.label} is required`,
+          })
         }
         break
 
       case "checkbox":
-        schema = z
-          .array(z.string())
-          .min(field.required ? 1 : 0, `${field.label} requires at least one selection`)
+        schema = z.array(z.string()).min(field.required ? 1 : 0, `${field.label} is required`)
         break
 
       case "gps":
@@ -220,25 +246,43 @@ export function FormRenderer({
             .max(180, "Longitude must be between -180 and 180"),
           accuracy: z.number().positive("Accuracy must be positive"),
         })
+        if (field.required) {
+          schema = schema.refine((val) => val !== undefined && val !== null, {
+            message: `${field.label} is required`,
+          })
+        }
         break
 
       case "file":
-        schema = z.string().url(`${field.label} must be uploaded`)
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .url(`${field.label} must be uploaded`)
         break
 
       case "color":
-        schema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, `${field.label} must be a valid color`)
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .regex(/^#[0-9A-Fa-f]{6}$/, `${field.label} must be a valid color`)
         break
 
       case "signature":
-        schema = z.string().min(1, `${field.label} is required`)
+        schema = z
+          .string({
+            required_error: `${field.label} is required`,
+          })
+          .min(1, `${field.label} is required`)
         break
 
       default:
-        schema = z.string()
+        schema = z.string({
+          required_error: `${field.label} is required`,
+        })
     }
 
-    // Make field optional if not required
     if (!field.required) {
       schema = schema.optional()
     }
@@ -387,15 +431,16 @@ export function FormRenderer({
           >
             <option value="">Select an option</option>
             {field.options?.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
         )
 
       case "radio":
-        const isRadioOtherSelected = value && !field.options?.includes(value) && value !== ""
+        const isRadioOtherSelected =
+          value && !field.options?.some((o) => o.value === value) && value !== ""
         const radioValue = isRadioOtherSelected ? "other" : value || ""
 
         return (
@@ -409,15 +454,15 @@ export function FormRenderer({
             >
               {field.options?.map((opt) => (
                 <div
-                  key={opt}
+                  key={opt.value}
                   className="flex items-center gap-3 p-3 rounded-md border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors bg-white hover:bg-gray-50"
                 >
-                  <RadioGroupItem value={opt} id={`${field.id}-${opt}`} />
+                  <RadioGroupItem value={opt.value} id={`${field.id}-${opt.value}`} />
                   <Label
-                    htmlFor={`${field.id}-${opt}`}
+                    htmlFor={`${field.id}-${opt.value}`}
                     className="text-sm font-medium text-gray-900 cursor-pointer flex-1"
                   >
-                    {opt}
+                    {opt.label}
                   </Label>
                 </div>
               ))}
@@ -457,34 +502,35 @@ export function FormRenderer({
         )
 
       case "checkbox":
-        const checkboxValues = value || []
+        const checkboxValues = Array.isArray(value) ? value : []
+        const optionValues = field.options?.map((o) => o.value) || []
         const hasOtherSelected = checkboxValues.some(
-          (val: string) => !field.options?.includes(val) && val !== ""
+          (val: string) => !optionValues.includes(val) && val !== ""
         )
         const otherValue = hasOtherSelected
-          ? checkboxValues.find((val: string) => !field.options?.includes(val))
+          ? checkboxValues.find((val: string) => !optionValues.includes(val))
           : ""
 
         return (
           <div className="space-y-3">
             {field.options?.map((opt) => (
               <Label
-                key={opt}
-                htmlFor={`${field.id}-${opt}`}
+                key={opt.value}
+                htmlFor={`${field.id}-${opt.value}`}
                 className="flex items-center gap-3 p-3 rounded-md border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors bg-white hover:bg-gray-50"
               >
                 <Checkbox
-                  id={`${field.id}-${opt}`}
-                  checked={checkboxValues.includes(opt)}
+                  id={`${field.id}-${opt.value}`}
+                  checked={checkboxValues.includes(opt.value)}
                   onCheckedChange={(checked) => {
                     const currentValues = checkboxValues
                     const newValues = checked
-                      ? [...currentValues, opt]
-                      : currentValues.filter((v: string) => v !== opt)
+                      ? [...currentValues, opt.value]
+                      : currentValues.filter((v: string) => v !== opt.value)
                     handleFieldChange(field.id, newValues)
                   }}
                 />
-                <span className="text-sm font-medium text-gray-900">{opt}</span>
+                <span className="text-sm font-medium text-gray-900">{opt.label}</span>
               </Label>
             ))}
 
@@ -502,13 +548,11 @@ export function FormRenderer({
                       const currentValues = checkboxValues
                       let newValues
                       if (checked) {
-                        // Add "other" placeholder, will be replaced when user types
-                        newValues = [...currentValues, "other"]
+                        // Add a placeholder for the custom value
+                        newValues = [...currentValues.filter((v) => optionValues.includes(v)), ""]
                       } else {
                         // Remove the custom value
-                        newValues = currentValues.filter(
-                          (v: string) => field.options?.includes(v) || v === ""
-                        )
+                        newValues = currentValues.filter((v) => optionValues.includes(v))
                       }
                       handleFieldChange(field.id, newValues)
                     }}
@@ -526,10 +570,10 @@ export function FormRenderer({
                       onChange={(e) => {
                         const currentValues = checkboxValues
                         const filteredValues = currentValues.filter((v: string) =>
-                          field.options?.includes(v)
+                          optionValues.includes(v)
                         )
                         const newValues = e.target.value.trim()
-                          ? [...filteredValues, e.target.value]
+                          ? [...filteredValues, e.target.value.trim()]
                           : filteredValues
                         handleFieldChange(field.id, newValues)
                       }}
@@ -537,90 +581,6 @@ export function FormRenderer({
                     />
                   </div>
                 )}
-              </div>
-            )}
-          </div>
-        )
-
-        return (
-          <div className="space-y-2">
-            {field.options?.map((opt) => (
-              <div key={opt} className="relative">
-                <Checkbox
-                  id={`${field.id}-${opt}`}
-                  checked={checkboxValues.includes(opt)}
-                  onCheckedChange={(checked) => {
-                    const currentValues = checkboxValues
-                    const newValues = checked
-                      ? [...currentValues, opt]
-                      : currentValues.filter((v: string) => v !== opt)
-                    handleFieldChange(field.id, newValues)
-                  }}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={`${field.id}-${opt}`}
-                  className="flex items-center gap-3 p-3 rounded-md border border-border bg-card hover:bg-accent hover:border-accent-foreground/20 cursor-pointer transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary/20 max-w-md"
-                >
-                  <div className="w-4 h-4 rounded border-2 border-muted-foreground peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center flex-shrink-0">
-                    <div className="w-2 h-2 bg-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">{opt}</span>
-                </Label>
-              </div>
-            ))}
-
-            {/* Other option */}
-            <div className="relative">
-              <Checkbox
-                id={`${field.id}-other`}
-                checked={hasOtherSelected}
-                onCheckedChange={(checked) => {
-                  const currentValues = checkboxValues
-                  let newValues
-                  if (checked) {
-                    // Add "other" placeholder, will be replaced when user types
-                    newValues = [...currentValues, "other"]
-                  } else {
-                    // Remove the custom value
-                    newValues = currentValues.filter(
-                      (v: string) => field.options?.includes(v) || v === ""
-                    )
-                  }
-                  handleFieldChange(field.id, newValues)
-                }}
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor={`${field.id}-other`}
-                className="flex items-center gap-3 p-3 rounded-md border border-border bg-card hover:bg-accent hover:border-accent-foreground/20 cursor-pointer transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary/20 max-w-md"
-              >
-                <div className="w-4 h-4 rounded border-2 border-muted-foreground peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center flex-shrink-0">
-                  <div className="w-2 h-2 bg-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
-                </div>
-                <span className="text-sm font-medium text-foreground">Other (please specify)</span>
-              </Label>
-            </div>
-
-            {/* Custom input for "Other" option */}
-            {hasOtherSelected && (
-              <div className="ml-7 mt-2">
-                <Input
-                  type="text"
-                  placeholder="Please specify..."
-                  value={otherValue || ""}
-                  onChange={(e) => {
-                    const currentValues = checkboxValues
-                    const filteredValues = currentValues.filter((v: string) =>
-                      field.options?.includes(v)
-                    )
-                    const newValues = e.target.value.trim()
-                      ? [...filteredValues, e.target.value]
-                      : filteredValues
-                    handleFieldChange(field.id, newValues)
-                  }}
-                  className="max-w-md"
-                />
               </div>
             )}
           </div>
@@ -698,7 +658,7 @@ export function FormRenderer({
 
         {/* Form Content */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
+          <form onSubmit={handleSubmit} className="divide-y divide-gray-100" role="form">
             {fields.map((field, index) => (
               <div key={field.id} id={`field-${field.id}`} className="px-8 py-8">
                 <div className="max-w-2xl mx-auto">

@@ -15,6 +15,9 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Key,
+  Lock,
+  LayoutGrid,
 } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { usePermissions } from "@/lib/permission-context"
@@ -31,6 +34,7 @@ const adminNavigation = [
     icon: LayoutDashboard,
     description: "Overview & Analytics",
     badge: null,
+    permission: null,
   },
   {
     name: "Forms",
@@ -38,6 +42,15 @@ const adminNavigation = [
     icon: FileText,
     description: "Create & Manage Forms",
     badge: null,
+    permission: null,
+  },
+  {
+    name: "Templates",
+    href: "/templates",
+    icon: LayoutGrid,
+    description: "Form Templates",
+    badge: "New",
+    permission: null,
   },
   {
     name: "Responses",
@@ -45,6 +58,7 @@ const adminNavigation = [
     icon: MessageSquare,
     description: "View Submissions",
     badge: null,
+    permission: null,
   },
   {
     name: "Users",
@@ -52,20 +66,45 @@ const adminNavigation = [
     icon: Users,
     description: "User Management",
     badge: null,
+    permission: null,
   },
   {
     name: "Analytics",
     href: "/analytics",
     icon: BarChart3,
     description: "Advanced Reports",
-    badge: "New",
+    badge: null,
+    permission: null,
   },
+]
+
+const rbacNavigation = [
+  {
+    name: "Roles",
+    href: "/rbac/roles",
+    icon: Shield,
+    description: "Manage Roles",
+    badge: null,
+    permission: "roles:admin",
+  },
+  {
+    name: "Permissions",
+    href: "/rbac/permissions",
+    icon: Key,
+    description: "Manage Permissions",
+    badge: null,
+    permission: "permissions:admin",
+  },
+]
+
+const settingsNavigation = [
   {
     name: "Settings",
     href: "/settings",
     icon: Settings,
     description: "System Configuration",
     badge: null,
+    permission: null,
   },
 ]
 
@@ -76,6 +115,7 @@ const agentNavigation = [
     icon: ClipboardList,
     description: "Assigned Forms",
     badge: null,
+    permission: null,
   },
   {
     name: "Submissions",
@@ -83,6 +123,7 @@ const agentNavigation = [
     icon: MessageSquare,
     description: "My Responses",
     badge: null,
+    permission: null,
   },
   {
     name: "Settings",
@@ -90,6 +131,7 @@ const agentNavigation = [
     icon: Settings,
     description: "Preferences",
     badge: null,
+    permission: null,
   },
 ]
 
@@ -103,7 +145,7 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
   const pathname = usePathname()
   const router = useRouter()
   const { logout, user } = useStore()
-  const { hasRole, hasAdminAccess, roles } = usePermissions()
+  const { hasRole, hasAdminAccess, roles, hasPermission } = usePermissions()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
   const handleLogout = () => {
@@ -116,8 +158,39 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
   }
 
   // Select navigation based on user role
-  const navigation = hasRole("agent") ? agentNavigation : adminNavigation
-  const panelTitle = hasRole("agent") ? "Field Agent Portal" : "Admin Panel"
+  const isAgent = hasRole("agent")
+  const panelTitle = isAgent ? "Field Agent Portal" : "Admin Panel"
+
+  // Filter RBAC nav items based on permissions
+  const filteredRbacNav = rbacNavigation.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  )
+
+  // Build navigation sections
+  type NavItem = {
+    name: string
+    href: string
+    icon: any
+    description: string
+    badge: string | null
+    permission: string | null
+  }
+  type NavSection = { title?: string; items: NavItem[] }
+
+  const navigationSections: NavSection[] = isAgent
+    ? [
+        { title: "My Work", items: agentNavigation.slice(0, 2) },
+        { title: "Settings", items: agentNavigation.slice(2) },
+      ]
+    : [
+        { title: "Overview", items: adminNavigation.slice(0, 1) },
+        { title: "Content Management", items: adminNavigation.slice(1, 4) },
+        { title: "Analytics", items: adminNavigation.slice(4, 5) },
+        ...(filteredRbacNav.length > 0
+          ? [{ title: "Access Control", items: filteredRbacNav }]
+          : []),
+        { title: "Configuration", items: settingsNavigation },
+      ]
 
   return (
     <motion.aside
@@ -163,117 +236,134 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1" role="navigation" aria-label="Main navigation">
-        {navigation.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-          const isHovered = hoveredItem === item.href
+      <nav className="flex-1 p-3 overflow-y-auto" role="navigation" aria-label="Main navigation">
+        {navigationSections.map((section, sectionIndex) => (
+          <div key={sectionIndex} className="mb-6 last:mb-0">
+            {/* Section Title */}
+            {section.title && !isCollapsed && (
+              <div className="px-3 mb-2">
+                <h2 className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+                  {section.title}
+                </h2>
+              </div>
+            )}
+            {section.title && isCollapsed && <div className="h-px bg-sidebar-border mb-2 mx-2" />}
 
-          return (
-            <div key={item.href} className="relative">
-              <Link
-                href={item.href}
-                onClick={handleNavigation}
-                onMouseEnter={() => setHoveredItem(item.href)}
-                onMouseLeave={() => setHoveredItem(null)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium group relative overflow-hidden",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isCollapsed && "justify-center px-2"
-                )}
-                aria-current={isActive ? "page" : undefined}
-                title={isCollapsed ? item.name : undefined}
-              >
-                {/* Active indicator */}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-primary-foreground rounded-r"
-                    layoutId="activeIndicator"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
+            {/* Section Items */}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                const isHovered = hoveredItem === item.href
 
-                {/* Icon with animation */}
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Icon
-                    className={cn(
-                      "w-5 h-5 shrink-0",
-                      isActive && "text-sidebar-primary-foreground"
-                    )}
-                  />
-                </motion.div>
-
-                {/* Text content */}
-                <AnimatePresence>
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex-1 overflow-hidden"
+                return (
+                  <div key={item.href} className="relative">
+                    <Link
+                      href={item.href}
+                      onClick={handleNavigation}
+                      onMouseEnter={() => setHoveredItem(item.href)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium group relative overflow-hidden",
+                        isActive
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        isCollapsed && "justify-center px-2"
+                      )}
+                      aria-current={isActive ? "page" : undefined}
+                      title={isCollapsed ? item.name : undefined}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{item.name}</span>
-                        {item.badge && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-2 text-xs px-1.5 py-0.5 h-5 bg-primary/20 text-primary-foreground border-0"
+                      {/* Active indicator */}
+                      {isActive && (
+                        <motion.div
+                          className="absolute left-0 top-0 bottom-0 w-1 bg-primary-foreground rounded-r"
+                          layoutId="activeIndicator"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+                      )}
+
+                      {/* Icon with animation */}
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Icon
+                          className={cn(
+                            "w-5 h-5 shrink-0",
+                            isActive && "text-sidebar-primary-foreground"
+                          )}
+                        />
+                      </motion.div>
+
+                      {/* Text content */}
+                      <AnimatePresence>
+                        {!isCollapsed && (
+                          <motion.div
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: "auto" }}
+                            exit={{ opacity: 0, width: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex-1 overflow-hidden"
                           >
-                            {item.badge}
-                          </Badge>
+                            <div className="flex items-center justify-between">
+                              <span className="truncate">{item.name}</span>
+                              {item.badge && (
+                                <Badge
+                                  variant="secondary"
+                                  className="ml-2 text-xs px-1.5 py-0.5 h-5 bg-primary/20 text-primary-foreground border-0"
+                                >
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-sidebar-foreground/60 truncate mt-0.5">
+                              {item.description}
+                            </p>
+                          </motion.div>
                         )}
-                      </div>
-                      <p className="text-xs text-sidebar-foreground/60 truncate mt-0.5">
-                        {item.description}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      </AnimatePresence>
 
-                {/* Hover effect */}
-                <motion.div
-                  className="absolute inset-0 bg-sidebar-accent/50 rounded-lg"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{
-                    scale: isHovered ? 1 : 0,
-                    opacity: isHovered ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.15 }}
-                />
-              </Link>
+                      {/* Hover effect */}
+                      <motion.div
+                        className="absolute inset-0 bg-sidebar-accent/50 rounded-lg"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{
+                          scale: isHovered ? 1 : 0,
+                          opacity: isHovered ? 1 : 0,
+                        }}
+                        transition={{ duration: 0.15 }}
+                      />
+                    </Link>
 
-              {/* Tooltip for collapsed state */}
-              <AnimatePresence>
-                {isCollapsed && isHovered && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-full ml-2 z-50"
-                  >
-                    <div className="bg-popover border border-border rounded-lg shadow-lg px-3 py-2 min-w-max">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{item.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {/* Tooltip for collapsed state */}
+                    <AnimatePresence>
+                      {isCollapsed && isHovered && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-full ml-2 z-50"
+                        >
+                          <div className="bg-popover border border-border rounded-lg shadow-lg px-3 py-2 min-w-max">
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{item.name}</p>
+                                <p className="text-xs text-muted-foreground">{item.description}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </nav>
 
       {/* User Profile & Logout */}

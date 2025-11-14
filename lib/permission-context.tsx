@@ -1,7 +1,17 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from "react"
 import type { UserRole, UserPermission } from "@/lib/types"
+import { logger } from "@/lib/logger"
+import { LOGIN_DATA_EXPIRY_MS, ADMIN_ROLES, SUPERVISOR_ROLES } from "@/lib/constants"
 
 interface PermissionContextType {
   permissions: string[]
@@ -36,11 +46,11 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
         const parsed = JSON.parse(loginData)
         // Check if data is expired (24 hours)
         const now = Date.now()
-        const expiryTime = parsed.timestamp + 24 * 60 * 60 * 1000 // 24 hours
+        const expiryTime = parsed.timestamp + LOGIN_DATA_EXPIRY_MS
 
         if (now > expiryTime) {
           localStorage.removeItem("login_data")
-          console.log("Login data expired, fetching fresh permissions")
+          logger.info("Login data expired, fetching fresh permissions")
           fetchUserPermissions()
           return
         }
@@ -52,7 +62,7 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
           return
         }
       } catch (error) {
-        console.error("Failed to parse login data:", error)
+        logger.error("Failed to parse login data", { error })
         localStorage.removeItem("login_data")
       }
     }
@@ -72,7 +82,7 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
           setLoading(false)
         }
       } catch (error) {
-        console.error("Failed to parse user data:", error)
+        logger.error("Failed to parse user data", { error })
       }
     }
   }, [])
@@ -99,78 +109,100 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
           setRoles(data.data.roles)
         }
       } else {
-        console.error("Failed to fetch permissions:", response.status, response.statusText)
+        logger.error("Failed to fetch permissions", {
+          status: response.status,
+          statusText: response.statusText,
+        })
       }
     } catch (error) {
-      console.error("Failed to fetch permissions:", error)
+      logger.error("Failed to fetch permissions", { error })
     } finally {
       setLoading(false)
     }
   }
 
-  // Permission checking functions
-  const hasPermission = (permission: string): boolean => {
-    return permissions.has(permission)
-  }
+  // Permission checking functions (memoized for performance)
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      return permissions.has(permission)
+    },
+    [permissions]
+  )
 
-  const hasAnyPermission = (permissionList: string[]): boolean => {
-    return permissionList.some((permission) => permissions.has(permission))
-  }
+  const hasAnyPermission = useCallback(
+    (permissionList: string[]): boolean => {
+      return permissionList.some((permission) => permissions.has(permission))
+    },
+    [permissions]
+  )
 
-  const hasAllPermissions = (permissionList: string[]): boolean => {
-    return permissionList.every((permission) => permissions.has(permission))
-  }
+  const hasAllPermissions = useCallback(
+    (permissionList: string[]): boolean => {
+      return permissionList.every((permission) => permissions.has(permission))
+    },
+    [permissions]
+  )
 
-  const hasRole = (roleName: string): boolean => {
-    return roles.some((role) => role.name === roleName)
-  }
+  const hasRole = useCallback(
+    (roleName: string): boolean => {
+      return roles.some((role) => role.name === roleName)
+    },
+    [roles]
+  )
 
   // Check if user has admin-level access (super_admin, system_admin, org_admin)
-  const hasAdminAccess = (): boolean => {
-    const adminRoles = ["super_admin", "system_admin", "org_admin"]
-    return roles.some((role) => adminRoles.includes(role.name))
-  }
+  const hasAdminAccess = useCallback((): boolean => {
+    return roles.some((role) => ADMIN_ROLES.includes(role.name as any))
+  }, [roles])
 
   // Check if user has supervisor-level access or higher
-  const hasSupervisorAccess = (): boolean => {
-    const supervisorRoles = [
-      "super_admin",
-      "system_admin",
-      "org_admin",
-      "data_manager",
-      "supervisor",
-    ]
-    return roles.some((role) => supervisorRoles.includes(role.name))
-  }
+  const hasSupervisorAccess = useCallback((): boolean => {
+    return roles.some((role) => SUPERVISOR_ROLES.includes(role.name as any))
+  }, [roles])
 
-  const refreshPermissions = async (): Promise<void> => {
+  const refreshPermissions = useCallback(async (): Promise<void> => {
     await fetchUserPermissions()
-  }
+  }, [])
 
-  const setPermissionsFromLogin = (loginData: {
-    permissions: UserPermission[]
-    roles: UserRole[]
-  }) => {
-    if (loginData.permissions && loginData.roles) {
-      setPermissions(new Set(loginData.permissions.map((p) => p.name)))
-      setRoles(loginData.roles)
-      setLoading(false)
-    }
-  }
+  const setPermissionsFromLogin = useCallback(
+    (loginData: { permissions: UserPermission[]; roles: UserRole[] }) => {
+      if (loginData.permissions && loginData.roles) {
+        setPermissions(new Set(loginData.permissions.map((p) => p.name)))
+        setRoles(loginData.roles)
+        setLoading(false)
+      }
+    },
+    []
+  )
 
-  const value: PermissionContextType = {
-    permissions: Array.from(permissions),
-    roles,
-    loading,
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    hasRole,
-    hasAdminAccess,
-    hasSupervisorAccess,
-    refreshPermissions,
-    setPermissionsFromLogin,
-  }
+  const value = useMemo<PermissionContextType>(
+    () => ({
+      permissions: Array.from(permissions),
+      roles,
+      loading,
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      hasRole,
+      hasAdminAccess,
+      hasSupervisorAccess,
+      refreshPermissions,
+      setPermissionsFromLogin,
+    }),
+    [
+      permissions,
+      roles,
+      loading,
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      hasRole,
+      hasAdminAccess,
+      hasSupervisorAccess,
+      refreshPermissions,
+      setPermissionsFromLogin,
+    ]
+  )
 
   return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>
 }

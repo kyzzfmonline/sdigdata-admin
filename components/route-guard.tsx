@@ -19,14 +19,29 @@ export function RouteGuard({
   requireAll = false,
   fallback,
 }: RouteGuardProps) {
-  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions()
+  const {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    permissions: userPermissions,
+  } = usePermissions()
 
   let hasAccess = false
 
   if (permission) {
     hasAccess = hasPermission(permission)
+    // Debug logging
+    if (!hasAccess) {
+      console.warn(`🚫 RouteGuard: Access denied. Required permission: "${permission}"`)
+      console.log("Your permissions:", userPermissions)
+      console.log(`Has "${permission}":`, userPermissions.includes(permission))
+    }
   } else if (permissions) {
     hasAccess = requireAll ? hasAllPermissions(permissions) : hasAnyPermission(permissions)
+    if (!hasAccess) {
+      console.warn(`🚫 RouteGuard: Access denied. Required permissions:`, permissions)
+      console.log("Your permissions:", userPermissions)
+    }
   } else {
     // If no permission specified, allow access
     hasAccess = true

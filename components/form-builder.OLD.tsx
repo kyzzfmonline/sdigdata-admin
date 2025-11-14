@@ -48,6 +48,9 @@ import { z } from "zod"
 import { useAutosave, useDraft } from "@/hooks/use-autosave"
 import { formsAPI } from "@/lib/api"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { AUTOSAVE_INTERVAL_MS } from "@/lib/constants"
+import { logger } from "@/lib/logger"
+import type { CreateFormInput } from "@/lib/types"
 
 interface FormBuilderProps {
   initialForm?: Form
@@ -144,7 +147,7 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
   } = useAutosave({
     data: currentFormData,
     key: draftKey,
-    interval: 60000, // 60 seconds (1 minute)
+    interval: AUTOSAVE_INTERVAL_MS,
     onSave: enableAutosave
       ? async (data) => {
           // Save to server for existing forms
@@ -189,7 +192,7 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [showPreview])
+  }, [showPreview, manualSave])
 
   const addField = useCallback((type: FormField["type"]) => {
     const fieldType = fieldTypes.find((ft) => ft.type === type)
@@ -202,7 +205,10 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
       helpText: "",
       options:
         type === "select" || type === "radio" || type === "checkbox"
-          ? ["Option 1", "Option 2"]
+          ? [
+              { label: "Option 1", value: "option_1" },
+              { label: "Option 2", value: "option_2" },
+            ]
           : undefined,
       min: type === "range" ? 0 : undefined,
       max: type === "range" ? 100 : undefined,
@@ -323,7 +329,9 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
 
     setIsSaving(true)
     try {
-      await onSave({
+      const formData: Omit<CreateFormInput, "form_schema"> & {
+        form_schema: { fields: FormField[]; branding: FormBranding }
+      } = {
         title,
         description,
         organization_id: initialForm?.organization_id || currentUser.organization_id,
@@ -333,7 +341,8 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
         },
         version: initialForm?.version || 1,
         status: publish ? "published" : "draft",
-      } as any)
+      }
+      await onSave(formData as any)
 
       // Clear autosave draft after successful save to prevent conflicts
       clearDraft()
@@ -389,6 +398,8 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
                   variant={showBrandingEditor ? "default" : "outline"}
                   size="sm"
                   className="gap-2"
+                  aria-label={showBrandingEditor ? "Hide branding editor" : "Show branding editor"}
+                  aria-pressed={showBrandingEditor}
                 >
                   <Palette className="w-4 h-4" />
                   Branding
@@ -400,6 +411,8 @@ export function FormBuilder({ initialForm, onSave }: FormBuilderProps) {
                   variant={showPreview ? "default" : "outline"}
                   size="sm"
                   className="gap-2"
+                  aria-label={showPreview ? "Switch to edit mode" : "Preview form"}
+                  aria-pressed={showPreview}
                 >
                   {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   {showPreview ? "Edit" : "Preview"}
@@ -852,21 +865,10 @@ const FieldEditor = memo(function FieldEditor({
               {/* Options for choice fields */}
               {(field.type === "select" || field.type === "radio" || field.type === "checkbox") && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Options</label>
-                    <textarea
-                      value={(field.options || []).join("\n")}
-                      onChange={(e) =>
-                        onUpdate({
-                          options: e.target.value.split("\n").filter((opt) => opt.trim()),
-                        })
-                      }
-                      onClick={(e) => e.stopPropagation()}
-                      placeholder="Enter each option on a new line"
-                      className="w-full p-2 border border-border rounded text-sm"
-                      rows={4}
-                    />
-                  </div>
+                  <FieldOptionsEditor
+                    options={field.options || []}
+                    onUpdate={(newOptions) => onUpdate({ options: newOptions })}
+                  />
 
                   {/* Allow Other Option Toggle */}
                   {(field.type === "radio" || field.type === "checkbox") && (
@@ -1029,6 +1031,7 @@ const FieldEditor = memo(function FieldEditor({
               e.stopPropagation()
               onDuplicate()
             }}
+            aria-label={`Duplicate field: ${field.label}`}
           >
             <Copy className="w-4 h-4" />
           </Button>
@@ -1040,6 +1043,7 @@ const FieldEditor = memo(function FieldEditor({
               onRemove()
             }}
             className="text-red-600 hover:text-red-700"
+            aria-label={`Delete field: ${field.label}`}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -1048,6 +1052,62 @@ const FieldEditor = memo(function FieldEditor({
     </div>
   )
 })
+
+interface FieldOptionsEditorProps {
+  options: { label: string; value: string }[]
+  onUpdate: (options: { label: string; value: string }[]) => void
+}
+
+const FieldOptionsEditor = ({ options, onUpdate }: FieldOptionsEditorProps) => {
+  const handleOptionChange = (index: number, field: "label" | "value", value: string) => {
+    const newOptions = [...options]
+    newOptions[index] = { ...newOptions[index], [field]: value }
+    onUpdate(newOptions)
+  }
+
+  const addOption = () => {
+    const newOptionValue = `option_${options.length + 1}`
+    onUpdate([...options, { label: `Option ${options.length + 1}`, value: newOptionValue }])
+  }
+
+  const removeOption = (index: number) => {
+    onUpdate(options.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium block">Options</label>
+      {options.map((option, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <Input
+            value={option.label}
+            onChange={(e) => handleOptionChange(index, "label", e.target.value)}
+            placeholder="Label"
+            className="flex-1"
+          />
+          <Input
+            value={option.value}
+            onChange={(e) => handleOptionChange(index, "value", e.target.value)}
+            placeholder="Value"
+            className="flex-1"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removeOption(index)}
+            aria-label={`Remove option ${index + 1}`}
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </Button>
+        </div>
+      ))}
+      <Button onClick={addOption} variant="outline" size="sm" className="mt-2">
+        <Plus className="w-4 h-4 mr-2" />
+        Add Option
+      </Button>
+    </div>
+  )
+}
 
 interface FormFieldPreviewProps {
   field: FormField
@@ -1081,8 +1141,8 @@ const FormFieldPreview = memo(function FormFieldPreview({ field }: FormFieldPrev
           <select disabled className="w-full p-2 border border-border rounded bg-muted">
             <option value="">Select an option</option>
             {field.options?.map((option, index) => (
-              <option key={index} value={option}>
-                {option}
+              <option key={index} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
@@ -1096,9 +1156,9 @@ const FormFieldPreview = memo(function FormFieldPreview({ field }: FormFieldPrev
                   key={index}
                   className="flex items-center gap-3 p-3 rounded-md bg-muted/50 cursor-not-allowed opacity-75 max-w-md"
                 >
-                  <RadioGroupItem value={option} disabled />
+                  <RadioGroupItem value={option.value} disabled />
                   <Label className="text-sm font-medium text-muted-foreground cursor-not-allowed flex-1">
-                    {option}
+                    {option.label}
                   </Label>
                 </div>
               ))}
@@ -1137,7 +1197,7 @@ const FormFieldPreview = memo(function FormFieldPreview({ field }: FormFieldPrev
                   <div className="w-4 h-4 rounded border-2 border-muted-foreground/50 flex items-center justify-center flex-shrink-0">
                     <div className="w-2 h-2 bg-muted-foreground/50 opacity-0 peer-checked:opacity-100 transition-opacity" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">{option}</span>
+                  <span className="text-sm font-medium text-muted-foreground">{option.label}</span>
                 </Label>
               </div>
             ))}

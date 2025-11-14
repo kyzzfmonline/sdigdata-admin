@@ -51,7 +51,7 @@ export interface FormField {
   required: boolean
   placeholder?: string
   helpText?: string
-  options?: string[]
+  options?: FormFieldOption[]
   allowOther?: boolean
   accept?: string
   validation?: FormFieldValidation
@@ -59,6 +59,11 @@ export interface FormField {
   max?: number
   step?: number
   defaultValue?: any
+}
+
+export interface FormFieldOption {
+  label: string
+  value: string
 }
 
 export interface FormBranding {
@@ -143,10 +148,12 @@ export interface UserRole {
 }
 
 export interface UserPermission {
+  id?: string
   name: string
   resource: string
   action: string
   description: string
+  created_at?: string
 }
 
 // User preferences
@@ -181,4 +188,200 @@ export interface Organization {
   logo_url?: string
   primary_color?: string
   created_at: string
+}
+
+// API Input Types
+export interface CreateFormInput {
+  title: string
+  description?: string
+  organization_id: string
+  form_schema: {
+    fields: FormField[]
+    branding?: FormBranding
+  }
+  version: number
+  status: "draft" | "published"
+}
+
+export interface UpdateFormInput extends Partial<CreateFormInput> {}
+
+export interface CreateResponseInput {
+  form_id: string
+  data: FormResponseData
+  attachments?: Record<string, string>
+}
+
+export interface UpdateUserInput {
+  username?: string
+  email?: string
+}
+
+export interface UpdatePreferencesInput {
+  theme?: ThemePreferences
+  notifications?: NotificationPreferences
+}
+
+export interface UpdateNotificationPreferencesInput extends Partial<NotificationPreferences> {}
+
+// API Response Types
+export interface APIResponse<T = any> {
+  success: boolean
+  data: T | null
+  message?: string
+  errors?: Record<string, string[]>
+  timestamp?: string
+}
+
+export interface PaginatedResponse<T> {
+  success: true
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    total_pages: number
+  }
+}
+
+// RBAC Types
+export interface RoleWithCounts {
+  id: string
+  name: string
+  description?: string
+  level: number
+  created_at: string
+  updated_at?: string
+  permission_count: number
+  user_count: number
+}
+
+export interface RoleWithPermissions {
+  id: string
+  name: string
+  description?: string
+  level: number
+  created_at: string
+  updated_at?: string
+  permissions: UserPermission[]
+}
+
+export interface CreateRoleInput {
+  name: string
+  description?: string
+  level?: number
+}
+
+export interface UpdateRoleInput {
+  name?: string
+  description?: string
+  level?: number
+}
+
+export interface CreatePermissionInput {
+  name: string
+  resource: string
+  action: string
+  description?: string
+}
+
+export interface AssignPermissionsInput {
+  permission_ids: string[]
+}
+
+export interface AssignRoleInput {
+  role_id: string
+}
+
+export interface UserWithRoles {
+  id: string
+  username: string
+  email: string
+  roles: UserRole[]
+}
+
+export interface EffectivePermissions {
+  user_id: string
+  username: string
+  permissions: UserPermission[]
+}
+
+// Session Management
+export interface UserSession {
+  id: string
+  device: string
+  ip_address: string
+  location?: string
+  last_active: string
+  created_at: string
+  is_current: boolean
+  user_agent: string
+}
+
+// Two-Factor Authentication
+export interface TwoFactorStatus {
+  enabled: boolean
+  methods: string[]
+  backup_codes_remaining: number
+}
+
+export interface TwoFactorSetup {
+  method: string
+  secret: string
+  qr_code_url: string
+  backup_codes: string[]
+}
+
+// API Keys
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  created_at: string
+  last_used_at?: string
+  expires_at?: string
+  scopes: string[]
+}
+
+export interface CreateApiKeyInput {
+  name: string
+  scopes: string[]
+  expires_in_days?: number
+}
+
+export interface ApiKeyWithSecret extends ApiKey {
+  key: string
+}
+
+// Audit Logs
+export interface AuditLog {
+  id: string
+  user_id: string
+  username: string
+  action_type: string
+  resource_type?: string
+  resource_id?: string
+  severity: "info" | "warning" | "critical"
+  ip_address: string
+  user_agent: string
+  details: Record<string, any>
+  timestamp: string
+}
+
+// Webhooks
+export interface Webhook {
+  id: string
+  name: string
+  url: string
+  events: string[]
+  enabled: boolean
+  secret: string
+  created_at: string
+  last_triggered_at?: string
+}
+
+export interface CreateWebhookInput {
+  name: string
+  url: string
+  events: string[]
+  enabled?: boolean
 }

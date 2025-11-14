@@ -6,6 +6,7 @@ import { Bell, User, Menu, Search, PanelLeftClose, PanelLeftOpen, ArrowLeft } fr
 import { Button } from "@/components/ui/button"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { NotificationCenter } from "@/components/notification-center"
 import { usePathname } from "next/navigation"
 import {
   DropdownMenu,
@@ -106,22 +107,7 @@ export function Topbar({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Topba
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No new notifications
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationCenter />
 
         {/* User Menu */}
         <DropdownMenu>

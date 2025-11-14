@@ -41,7 +41,10 @@ export const queryClient = new QueryClient({
 export const queryKeys = {
   // Auth
   auth: {
-    me: ["auth", "me"] as const,
+    all: ["auth"] as const,
+    me: () => ["auth", "me"] as const,
+    verify: () => ["auth", "verify"] as const,
+    permissions: () => ["auth", "permissions"] as const,
   },
 
   // Forms
@@ -50,6 +53,13 @@ export const queryKeys = {
     assigned: ["forms", "assigned"] as const,
     detail: (id: string) => ["forms", "detail", id] as const,
     templates: ["forms", "templates"] as const,
+    versions: (id: string) => ["forms", "detail", id, "versions"] as const,
+    version: (id: string, version: number) => ["forms", "detail", id, "versions", version] as const,
+    assignments: (id: string) => ["forms", "detail", id, "assignments"] as const,
+    agents: (id: string) => ["forms", "detail", id, "agents"] as const,
+    lockStatus: (id: string) => ["forms", "detail", id, "lock-status"] as const,
+    conditionalRules: (id: string) => ["forms", "detail", id, "conditional-rules"] as const,
+    validationRules: (id: string) => ["forms", "detail", id, "validation-rules"] as const,
   },
 
   // Responses
@@ -70,6 +80,73 @@ export const queryKeys = {
     userPermissions: (userId: string) => ["users", userId, "permissions"] as const,
   },
 
+  // RBAC
+  rbac: {
+    all: ["rbac"] as const,
+    roles: {
+      all: ["rbac", "roles"] as const,
+      list: () => ["rbac", "roles", "list"] as const,
+      detail: (id: string) => ["rbac", "roles", "detail", id] as const,
+      permissions: (id: string) => ["rbac", "roles", "detail", id, "permissions"] as const,
+      users: (id: string) => ["rbac", "roles", "detail", id, "users"] as const,
+      expiring: (days: number) => ["rbac", "roles", "expiring", days] as const,
+      expired: () => ["rbac", "roles", "expired"] as const,
+    },
+    permissions: {
+      all: ["rbac", "permissions"] as const,
+      list: (resource?: string) => ["rbac", "permissions", "list", { resource }] as const,
+    },
+    permissionGroups: {
+      all: ["rbac", "permission-groups"] as const,
+      list: (orgId?: string) => ["rbac", "permission-groups", "list", { orgId }] as const,
+      detail: (id: string) => ["rbac", "permission-groups", "detail", id] as const,
+    },
+  },
+
+  // Sessions
+  sessions: {
+    all: ["sessions"] as const,
+    my: () => ["sessions", "my"] as const,
+    list: (includeRevoked: boolean) => ["sessions", "my", "list", { includeRevoked }] as const,
+    detail: (id: string) => ["sessions", "detail", id] as const,
+    stats: () => ["sessions", "my", "stats"] as const,
+    suspicious: () => ["sessions", "my", "suspicious"] as const,
+  },
+
+  // API Keys
+  apiKeys: {
+    all: ["api-keys"] as const,
+    my: () => ["api-keys", "my"] as const,
+    list: (includeRevoked: boolean) => ["api-keys", "my", "list", { includeRevoked }] as const,
+    detail: (id: string) => ["api-keys", "detail", id] as const,
+    stats: () => ["api-keys", "my", "stats"] as const,
+    usage: (id: string, days: number) => ["api-keys", "detail", id, "usage", days] as const,
+  },
+
+  // Audit Logs
+  auditLogs: {
+    all: ["audit-logs"] as const,
+    list: (params?: any) => ["audit-logs", "list", params] as const,
+    detail: (id: string) => ["audit-logs", "detail", id] as const,
+    stats: (days: number) => ["audit-logs", "stats", days] as const,
+    userSummary: (userId: string, days: number) =>
+      ["audit-logs", "user-summary", userId, days] as const,
+  },
+
+  // Security Settings
+  security: {
+    all: ["security"] as const,
+    settings: (orgId?: string) => ["security", "settings", { orgId }] as const,
+    passwordPolicy: (orgId?: string) => ["security", "password-policy", { orgId }] as const,
+    accountStatus: () => ["security", "account-status"] as const,
+    loginHistory: (days: number) => ["security", "login-history", days] as const,
+    systemConfig: {
+      all: ["security", "system-config"] as const,
+      list: (prefix?: string) => ["security", "system-config", "list", { prefix }] as const,
+      detail: (key: string) => ["security", "system-config", "detail", key] as const,
+    },
+  },
+
   // Analytics
   analytics: {
     dashboard: (period?: string) => ["analytics", "dashboard", period] as const,
@@ -79,19 +156,55 @@ export const queryKeys = {
     agentPerformance: (agentId: string) => ["analytics", "agent", agentId] as const,
   },
 
+  // Templates
+  templates: {
+    all: (params?: any) => ["templates", "list", params] as const,
+    detail: (id: string) => ["templates", "detail", id] as const,
+    popular: (limit: number) => ["templates", "popular", limit] as const,
+  },
+
   // Notifications
   notifications: {
     all: (params?: any) => ["notifications", "list", params] as const,
     recent: ["notifications", "recent"] as const,
   },
 
-  // Health
-  health: {
-    dashboard: ["health", "dashboard"] as const,
+  // Organizations
+  organizations: {
+    all: ["organizations"] as const,
+    list: () => ["organizations", "list"] as const,
+    detail: (id: string) => ["organizations", "detail", id] as const,
+  },
+
+  // ML/AI
+  ml: {
+    all: ["ml"] as const,
+    qualityStats: (formId?: string) => ["ml", "quality-stats", { formId }] as const,
+    datasets: () => ["ml", "datasets"] as const,
+    trainingData: (params?: any) => ["ml", "training-data", params] as const,
+    spatialData: (params?: any) => ["ml", "spatial-data", params] as const,
+    temporalTrends: (formId: string | undefined, days: number) =>
+      ["ml", "temporal-trends", { formId, days }] as const,
   },
 
   // Search
   search: {
     global: (params: any) => ["search", "global", params] as const,
+    saved: () => ["search", "saved"] as const,
+  },
+
+  // Metrics
+  metrics: {
+    all: ["metrics"] as const,
+    systemHealth: () => ["metrics", "system-health"] as const,
+    performance: () => ["metrics", "performance"] as const,
+    apiUsage: (days: number) => ["metrics", "api-usage", days] as const,
+    rateLimits: () => ["metrics", "rate-limits"] as const,
+    logs: (params?: any) => ["metrics", "logs", params] as const,
+  },
+
+  // Health
+  health: {
+    dashboard: ["health", "dashboard"] as const,
   },
 }

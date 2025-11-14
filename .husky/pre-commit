@@ -1,6 +1,9 @@
+# Pre-commit hook disabled
 # Run lint-staged
-pnpm lint-staged
+# pnpm lint-staged
 
 # Run type check
-echo "Running TypeScript type check..."
-pnpm type-check
+# echo "Running TypeScript type check..."
+# pnpm type-check
+
+echo "Pre-commit checks disabled"

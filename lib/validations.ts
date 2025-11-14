@@ -158,7 +158,14 @@ export const formFieldSchema = z
     required: z.boolean(),
     placeholder: z.string().max(255).optional(),
     helpText: z.string().max(500).optional(),
-    options: z.array(z.string()).optional(),
+    options: z
+      .array(
+        z.object({
+          label: z.string(),
+          value: z.string(),
+        })
+      )
+      .optional(),
     accept: z.string().optional(),
     validation: formFieldValidationSchema.optional(),
     min: z.number().optional(),
@@ -169,13 +176,13 @@ export const formFieldSchema = z
   .refine(
     (data) => {
       // Validate that select/radio fields have options
-      if (["select", "radio"].includes(data.type)) {
+      if (["select", "radio", "checkbox"].includes(data.type)) {
         return data.options && data.options.length > 0
       }
       return true
     },
     {
-      message: "Select and radio fields must have options",
+      message: "Select, radio, and checkbox fields must have options",
       path: ["options"],
     }
   )

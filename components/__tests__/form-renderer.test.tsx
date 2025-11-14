@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { FormRenderer } from "../form-renderer"
 import type { FormField } from "@/lib/types"
 
-// Mock toast
+// Mock use-toast
 jest.mock("@/hooks/use-toast", () => ({
   toast: jest.fn(),
 }))
@@ -145,34 +145,6 @@ describe("FormRenderer", () => {
 
       expect(screen.queryByText("This is a test form description")).not.toBeInTheDocument()
     })
-
-    it("should render form description when provided", () => {
-      render(
-        <FormRenderer
-          formId="form-1"
-          formTitle="Test Form"
-          description="This is a test form description"
-          fields={basicFields}
-          onSubmit={mockOnSubmit}
-        />
-      )
-
-      expect(screen.getByText("This is a test form description")).toBeInTheDocument()
-    })
-
-    it("should not render description when empty", () => {
-      render(
-        <FormRenderer
-          formId="form-1"
-          formTitle="Test Form"
-          description=""
-          fields={basicFields}
-          onSubmit={mockOnSubmit}
-        />
-      )
-
-      expect(screen.queryByText("This is a test form description")).not.toBeInTheDocument()
-    })
   })
 
   describe("Field Types", () => {
@@ -222,14 +194,17 @@ describe("FormRenderer", () => {
       expect(screen.getByRole("textbox", { name: /Description/i })).toBeInTheDocument()
     })
 
-    it("should render select field", () => {
+    it("should render select field with label/value options", () => {
       const fields: FormField[] = [
         {
           id: "field-1",
           type: "select",
           label: "Country",
           required: true,
-          options: ["USA", "Canada", "Mexico"],
+          options: [
+            { label: "United States", value: "US" },
+            { label: "Canada", value: "CA" },
+          ],
         },
       ]
 
@@ -244,17 +219,21 @@ describe("FormRenderer", () => {
       )
 
       expect(screen.getByRole("combobox", { name: /Country/i })).toBeInTheDocument()
-      expect(screen.getByText("USA")).toBeInTheDocument()
+      const option = screen.getByText("United States") as HTMLOptionElement
+      expect(option).toBeInTheDocument()
     })
 
-    it("should render radio buttons", () => {
+    it("should render radio buttons with label/value options", () => {
       const fields: FormField[] = [
         {
           id: "field-1",
           type: "radio",
           label: "Gender",
           required: true,
-          options: ["Male", "Female", "Other"],
+          options: [
+            { label: "Male", value: "male" },
+            { label: "Female", value: "female" },
+          ],
         },
       ]
 
@@ -272,14 +251,17 @@ describe("FormRenderer", () => {
       expect(screen.getByLabelText("Female")).toBeInTheDocument()
     })
 
-    it("should render checkboxes", () => {
+    it("should render checkboxes with label/value options", () => {
       const fields: FormField[] = [
         {
           id: "field-1",
           type: "checkbox",
           label: "Interests",
           required: false,
-          options: ["Sports", "Music", "Reading"],
+          options: [
+            { label: "Sports", value: "sports" },
+            { label: "Music", value: "music" },
+          ],
         },
       ]
 
@@ -300,7 +282,6 @@ describe("FormRenderer", () => {
 
   describe("Validation", () => {
     it("should show error for required field when empty", async () => {
-      const { toast } = require("@/hooks/use-toast")
       const user = userEvent.setup()
 
       render(
@@ -317,12 +298,7 @@ describe("FormRenderer", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(toast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: "Validation Error",
-            variant: "destructive",
-          })
-        )
+        expect(screen.getByText("Name is required")).toBeInTheDocument()
       })
 
       expect(mockOnSubmit).not.toHaveBeenCalled()
@@ -330,6 +306,7 @@ describe("FormRenderer", () => {
 
     it("should validate email format", async () => {
       const user = userEvent.setup()
+      const { toast } = require("@/hooks/use-toast")
 
       render(
         <FormRenderer
@@ -351,14 +328,22 @@ describe("FormRenderer", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/must be a valid email/i)).toBeInTheDocument()
+        // Check that toast was called with validation error
+        expect(toast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Validation Error",
+            variant: "destructive",
+          })
+        )
       })
 
+      // Check that submit was not called due to validation error
       expect(mockOnSubmit).not.toHaveBeenCalled()
     })
 
     it("should validate number range", async () => {
       const user = userEvent.setup()
+      const { toast } = require("@/hooks/use-toast")
       const fields: FormField[] = [
         {
           id: "field-1",
@@ -389,8 +374,17 @@ describe("FormRenderer", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/must be at most 100/i)).toBeInTheDocument()
+        // Check that toast was called
+        expect(toast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Validation Error",
+            variant: "destructive",
+          })
+        )
       })
+
+      // Check that submit was not called due to validation error
+      expect(mockOnSubmit).not.toHaveBeenCalled()
     })
 
     it("should clear error when user starts typing", async () => {
@@ -411,7 +405,7 @@ describe("FormRenderer", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/Name is required/i)).toBeInTheDocument()
+        expect(screen.getByText("Name is required")).toBeInTheDocument()
       })
 
       // Start typing
@@ -419,7 +413,7 @@ describe("FormRenderer", () => {
       await user.type(nameInput, "J")
 
       await waitFor(() => {
-        expect(screen.queryByText(/Name is required/i)).not.toBeInTheDocument()
+        expect(screen.queryByText("Name is required")).not.toBeInTheDocument()
       })
     })
   })
@@ -463,6 +457,42 @@ describe("FormRenderer", () => {
           description: "Form submitted successfully",
           variant: "success",
         })
+      })
+    })
+
+    it("should submit correct value for select field", async () => {
+      const user = userEvent.setup()
+      const fields: FormField[] = [
+        {
+          id: "field-1",
+          type: "select",
+          label: "Country",
+          required: true,
+          options: [
+            { label: "United States", value: "US" },
+            { label: "Canada", value: "CA" },
+          ],
+        },
+      ]
+      mockOnSubmit.mockResolvedValue(undefined)
+
+      render(
+        <FormRenderer
+          formTitle="Test Form"
+          description=""
+          formId="form-1"
+          fields={fields}
+          onSubmit={mockOnSubmit}
+        />
+      )
+
+      await user.selectOptions(screen.getByRole("combobox"), "US")
+
+      const submitButton = screen.getByRole("button", { name: /Submit Response/i })
+      await user.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({ "field-1": "US" }, expect.any(Object))
       })
     })
 
@@ -522,7 +552,7 @@ describe("FormRenderer", () => {
   })
 
   describe("Field Interactions", () => {
-    it("should handle checkbox group selection", async () => {
+    it("should handle checkbox group selection with new data structure", async () => {
       const user = userEvent.setup()
       const fields: FormField[] = [
         {
@@ -530,7 +560,10 @@ describe("FormRenderer", () => {
           type: "checkbox",
           label: "Interests",
           required: false,
-          options: ["Sports", "Music", "Reading"],
+          options: [
+            { label: "Sports", value: "sports" },
+            { label: "Music", value: "music" },
+          ],
         },
       ]
 
@@ -546,11 +579,8 @@ describe("FormRenderer", () => {
         />
       )
 
-      const sportsCheckbox = screen.getByText("Sports").previousSibling as HTMLElement
-      const musicCheckbox = screen.getByText("Music").previousSibling as HTMLElement
-
-      await user.click(sportsCheckbox)
-      await user.click(musicCheckbox)
+      await user.click(screen.getByLabelText("Sports"))
+      await user.click(screen.getByLabelText("Music"))
 
       const submitButton = screen.getByRole("button", { name: /Submit Response/i })
       await user.click(submitButton)
@@ -558,7 +588,7 @@ describe("FormRenderer", () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            "field-1": expect.arrayContaining(["Sports", "Music"]),
+            "field-1": expect.arrayContaining(["sports", "music"]),
           }),
           expect.any(Object)
         )

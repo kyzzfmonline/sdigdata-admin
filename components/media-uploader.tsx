@@ -146,9 +146,9 @@ export function MediaUploader({
               className="hidden"
             />
             <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm font-medium text-foreground mb-1">
+            <div className="text-sm font-medium text-foreground mb-1">
               {isUploading ? "Uploading..." : label}
-            </p>
+            </div>
             <p className="text-xs text-muted-foreground mb-3">Drag and drop or click to select</p>
             <Button
               variant="outline"

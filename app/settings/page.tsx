@@ -1,16 +1,17 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { LayoutWrapper } from "@/components/layout-wrapper"
-import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FormCard } from "@/components/standardized-cards"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Select,
   SelectContent,
@@ -18,13 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { useStore } from "@/lib/store"
 import { usePermissions } from "@/lib/permission-context"
 import { useCleanupForms } from "@/hooks/use-forms"
 import { useCleanupResponses } from "@/hooks/use-responses"
 import { useCleanupUsers } from "@/hooks/use-users"
-import { RoleManagement } from "@/components/role-management"
 import {
   useCurrentUser,
   useUpdateCurrentUser,
@@ -46,7 +45,28 @@ import {
   FormDescription,
 } from "@/components/ui/form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, User, Bell, Palette, Shield, Database } from "lucide-react"
+import {
+  Loader2,
+  User,
+  Bell,
+  Palette,
+  Shield,
+  Database,
+  Lock,
+  Mail,
+  Settings,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Moon,
+  Sun,
+  Monitor,
+  Trash2,
+  Save,
+  Key,
+  FileText,
+  Activity,
+} from "lucide-react"
 
 // Validation schemas
 const profileSchema = z.object({
@@ -95,8 +115,9 @@ type ThemeFormData = z.infer<typeof themeSchema>
 
 export default function SettingsPage() {
   const { user } = useStore()
-  const { hasAdminAccess } = usePermissions()
+  const { hasAdminAccess, roles } = usePermissions()
   const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState("account")
 
   // Admin cleanup hooks
   const cleanupForms = useCleanupForms()
@@ -104,20 +125,20 @@ export default function SettingsPage() {
   const cleanupUsers = useCleanupUsers()
 
   // User profile hooks
-  const { data: currentUser } = useCurrentUser()
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser()
   const updateProfile = useUpdateCurrentUser()
   const changePassword = useChangePassword()
-  const { data: notificationPrefs } = useNotificationPreferences()
+  const { data: notificationPrefs, isLoading: notifLoading } = useNotificationPreferences()
   const updateNotifications = useUpdateNotificationPreferences()
-  const { data: themePrefs } = useThemePreferences()
+  const { data: themePrefs, isLoading: themeLoading } = useThemePreferences()
   const updateTheme = useUpdateThemePreferences()
 
   // Forms
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      username: currentUser?.username || "",
-      email: currentUser?.email || "",
+      username: "",
+      email: "",
     },
   })
 
@@ -133,51 +154,51 @@ export default function SettingsPage() {
   const notificationForm = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
     defaultValues: {
-      email_notifications: notificationPrefs?.email_notifications ?? true,
-      form_assignments: notificationPrefs?.form_assignments ?? true,
-      responses: notificationPrefs?.responses ?? true,
-      system_updates: notificationPrefs?.system_updates ?? true,
+      email_notifications: true,
+      form_assignments: true,
+      responses: true,
+      system_updates: true,
     },
   })
 
   const themeForm = useForm<ThemeFormData>({
     resolver: zodResolver(themeSchema),
     defaultValues: {
-      theme: (themePrefs?.theme as "light" | "dark" | "system") || "system",
-      compact_mode: themePrefs?.compact_mode ?? false,
+      theme: "system",
+      compact_mode: false,
     },
   })
 
   // Update form defaults when data loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentUser) {
       profileForm.reset({
-        username: currentUser.username,
-        email: currentUser.email,
+        username: (currentUser as any).username || "",
+        email: (currentUser as any).email || "",
       })
     }
-  }, [currentUser, profileForm])
+  }, [currentUser])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (notificationPrefs) {
       notificationForm.reset(notificationPrefs)
     }
-  }, [notificationPrefs, notificationForm])
+  }, [notificationPrefs])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (themePrefs) {
       themeForm.reset({
-        theme: themePrefs.theme,
-        compact_mode: themePrefs.compact_mode,
+        theme: (themePrefs.theme as "light" | "dark" | "system") || "system",
+        compact_mode: themePrefs.compact_mode ?? false,
       })
     }
-  }, [themePrefs, themeForm])
+  }, [themePrefs])
 
   // Handlers
   const handleCleanupForms = () => {
     if (
       confirm(
-        "Are you sure you want to permanently delete all soft-deleted forms? This action cannot be undone."
+        "⚠️ WARNING: This will permanently delete all soft-deleted forms.\n\nThis action cannot be undone. Are you absolutely sure?"
       )
     ) {
       cleanupForms.mutate()
@@ -187,7 +208,7 @@ export default function SettingsPage() {
   const handleCleanupResponses = () => {
     if (
       confirm(
-        "Are you sure you want to permanently delete all soft-deleted responses? This action cannot be undone."
+        "⚠️ WARNING: This will permanently delete all soft-deleted responses.\n\nThis action cannot be undone. Are you absolutely sure?"
       )
     ) {
       cleanupResponses.mutate()
@@ -197,7 +218,7 @@ export default function SettingsPage() {
   const handleCleanupUsers = () => {
     if (
       confirm(
-        "Are you sure you want to permanently delete all soft-deleted users? This action cannot be undone."
+        "⚠️ WARNING: This will permanently delete all soft-deleted user accounts.\n\nThis action cannot be undone. Are you absolutely sure?"
       )
     ) {
       cleanupUsers.mutate()
@@ -207,7 +228,18 @@ export default function SettingsPage() {
   const onProfileSubmit = (data: ProfileFormData) => {
     updateProfile.mutate(data, {
       onSuccess: () => {
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been updated successfully.",
+        })
         profileForm.reset(data)
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Update Failed",
+          description: error.response?.data?.detail || "Failed to update profile",
+          variant: "destructive",
+        })
       },
     })
   }
@@ -220,404 +252,875 @@ export default function SettingsPage() {
       },
       {
         onSuccess: () => {
+          toast({
+            title: "Password Changed",
+            description: "Your password has been updated successfully.",
+          })
           passwordForm.reset()
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Password Change Failed",
+            description: error.response?.data?.detail || "Failed to change password",
+            variant: "destructive",
+          })
         },
       }
     )
   }
 
   const onNotificationSubmit = (data: NotificationFormData) => {
-    updateNotifications.mutate(data)
+    updateNotifications.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Preferences Saved",
+          description: "Your notification preferences have been updated.",
+        })
+      },
+    })
   }
 
   const onThemeSubmit = (data: ThemeFormData) => {
-    updateTheme.mutate(data)
+    updateTheme.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Preferences Saved",
+          description: "Your appearance settings have been updated.",
+        })
+      },
+    })
+  }
+
+  const getThemeIcon = (theme: string) => {
+    switch (theme) {
+      case "light":
+        return <Sun className="w-4 h-4" />
+      case "dark":
+        return <Moon className="w-4 h-4" />
+      default:
+        return <Monitor className="w-4 h-4" />
+    }
   }
 
   return (
     <LayoutWrapper>
-      <PageHeader
-        title="Settings"
-        description="Manage your account settings and preferences"
-        breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Settings" }]}
-      />
+      <div className="p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage your account, preferences, and system configuration
+              </p>
+            </div>
+          </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="profile" className="space-y-8">
-          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-3 lg:grid-cols-5">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
+          {/* User Info Card */}
+          <Card className="mt-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-foreground">{user?.username}</h3>
+                  <p className="text-sm text-muted-foreground">{user?.email || "No email set"}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {roles.map((role) => (
+                      <Badge key={role.id} variant="secondary" className="text-xs">
+                        <Shield className="w-3 h-3 mr-1" />
+                        {role.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Settings Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
+            <TabsTrigger value="account" className="flex items-center gap-2 py-3">
               <User className="w-4 h-4" />
-              Profile
+              <span className="hidden sm:inline">Account</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <TabsTrigger value="security" className="flex items-center gap-2 py-3">
+              <Shield className="w-4 h-4" />
+              <span className="hidden sm:inline">Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2 py-3">
               <Bell className="w-4 h-4" />
-              Notifications
+              <span className="hidden sm:inline">Notifications</span>
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex items-center gap-2">
+            <TabsTrigger value="appearance" className="flex items-center gap-2 py-3">
               <Palette className="w-4 h-4" />
-              Appearance
+              <span className="hidden sm:inline">Appearance</span>
             </TabsTrigger>
             {hasAdminAccess() && (
-              <>
-                <TabsTrigger value="roles" className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  Roles
-                </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2">
-                  <Database className="w-4 h-4" />
-                  Admin
-                </TabsTrigger>
-              </>
+              <TabsTrigger value="admin" className="flex items-center gap-2 py-3">
+                <Database className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent value="profile" className="space-y-6">
-            <FormCard
-              title="Profile Information"
-              description="Update your account details and manage your profile."
-              icon={User}
-            >
-              <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={profileForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+          {/* Account Tab */}
+          <TabsContent value="account" className="space-y-6">
+            {/* Profile Information */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <Button type="submit" disabled={updateProfile.isPending}>
-                    {updateProfile.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Update Profile
-                  </Button>
-                </form>
-              </Form>
-            </FormCard>
+                  <div>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>
+                      Update your personal details and account information
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <Form {...profileForm}>
+                  <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={profileForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-muted-foreground" />
+                              Username
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Enter username" />
+                            </FormControl>
+                            <FormDescription>
+                              Your unique identifier across the platform
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                              Email Address
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} type="email" placeholder="Enter email address" />
+                            </FormControl>
+                            <FormDescription>
+                              Used for notifications and account recovery
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-            <FormCard
-              title="Change Password"
-              description="Update your password to keep your account secure."
-              icon={User}
-            >
-              <Form {...passwordForm}>
-                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>New Password</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="password" />
-                        </FormControl>
-                        <FormDescription>
-                          Password must be 8-128 characters with uppercase, lowercase, numbers, and
-                          special characters.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm New Password</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={changePassword.isPending}>
-                    {changePassword.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Change Password
-                  </Button>
-                </form>
-              </Form>
-            </FormCard>
-          </TabsContent>
+                    <div className="flex items-center gap-3 pt-4">
+                      <Button
+                        type="submit"
+                        disabled={updateProfile.isPending || !profileForm.formState.isDirty}
+                      >
+                        {updateProfile.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                      {profileForm.formState.isDirty && (
+                        <Button type="button" variant="outline" onClick={() => profileForm.reset()}>
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="notifications" className="space-y-6">
-            <FormCard
-              title="Notification Preferences"
-              description="Choose what notifications you want to receive."
-              icon={Bell}
-            >
-              <Form {...notificationForm}>
-                <form
-                  onSubmit={notificationForm.handleSubmit(onNotificationSubmit)}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={notificationForm.control}
-                    name="email_notifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Email Notifications</FormLabel>
-                          <FormDescription>Receive notifications via email</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={notificationForm.control}
-                    name="form_assignments"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Form Assignments</FormLabel>
-                          <FormDescription>
-                            Get notified when forms are assigned to you
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={notificationForm.control}
-                    name="responses"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Response Notifications</FormLabel>
-                          <FormDescription>
-                            Get notified when new responses are submitted
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={notificationForm.control}
-                    name="system_updates"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">System Updates</FormLabel>
-                          <FormDescription>
-                            Receive notifications about system updates and maintenance
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={updateNotifications.isPending}>
-                    {updateNotifications.isPending && (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    )}
-                    Save Preferences
-                  </Button>
-                </form>
-              </Form>
-            </FormCard>
-          </TabsContent>
+            {/* Change Password */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <CardTitle>Security</CardTitle>
+                    <CardDescription>
+                      Update your password to keep your account secure
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <Alert className="mb-6">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Password must be at least 8 characters and include uppercase, lowercase,
+                    numbers, and special characters (@$!%*?&).
+                  </AlertDescription>
+                </Alert>
 
-          <TabsContent value="appearance" className="space-y-6">
-            <FormCard
-              title="Appearance Settings"
-              description="Customize how the application looks and feels."
-              icon={Palette}
-            >
-              <Form {...themeForm}>
-                <form onSubmit={themeForm.handleSubmit(onThemeSubmit)} className="space-y-6">
-                  <FormField
-                    control={themeForm.control}
-                    name="theme"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Theme</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Form {...passwordForm}>
+                  <form
+                    onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+                    className="space-y-6"
+                  >
+                    <FormField
+                      control={passwordForm.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Key className="w-4 h-4 text-muted-foreground" />
+                            Current Password
+                          </FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
+                            <Input
+                              {...field}
+                              type="password"
+                              placeholder="Enter current password"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="light">Light</SelectItem>
-                            <SelectItem value="dark">Dark</SelectItem>
-                            <SelectItem value="system">System</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Choose your preferred theme or follow system settings.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={themeForm.control}
-                    name="compact_mode"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Compact Mode</FormLabel>
-                          <FormDescription>
-                            Use a more compact layout to fit more content on screen
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={updateTheme.isPending}>
-                    {updateTheme.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Save Preferences
-                  </Button>
-                </form>
-              </Form>
-            </FormCard>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Lock className="w-4 h-4 text-muted-foreground" />
+                              New Password
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} type="password" placeholder="Enter new password" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                              Confirm New Password
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="password"
+                                placeholder="Confirm new password"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-4">
+                      <Button type="submit" disabled={changePassword.isPending}>
+                        {changePassword.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 mr-2" />
+                            Change Password
+                          </>
+                        )}
+                      </Button>
+                      {passwordForm.formState.isDirty && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => passwordForm.reset()}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {hasAdminAccess() && (
-            <TabsContent value="roles" className="space-y-6">
-              <RoleManagement />
-            </TabsContent>
-          )}
+          {/* Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <CardTitle>Security & Privacy</CardTitle>
+                    <CardDescription>
+                      Manage your security settings and integrations
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <div className="grid gap-4">
+                  {/* Sessions */}
+                  <a
+                    href="/settings/sessions"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Monitor className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">Active Sessions</h3>
+                        <p className="text-sm text-muted-foreground">
+                          View and manage your active login sessions across devices
+                        </p>
+                      </div>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </a>
 
+                  {/* API Keys */}
+                  <a
+                    href="/settings/api-keys"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                        <Key className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">API Keys</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Create and manage API keys for programmatic access
+                        </p>
+                      </div>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </a>
+
+                  {/* Webhooks */}
+                  <a
+                    href="/settings/webhooks"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                        <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">Webhooks</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Configure webhooks to receive real-time notifications
+                        </p>
+                      </div>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </a>
+
+                  {/* Audit Logs */}
+                  <a
+                    href="/settings/audit-logs"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
+                        <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-1">Audit Logs</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Track all security-relevant actions and system events
+                        </p>
+                      </div>
+                    </div>
+                    <svg
+                      className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>Choose what notifications you want to receive</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <Form {...notificationForm}>
+                  <form
+                    onSubmit={notificationForm.handleSubmit(onNotificationSubmit)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={notificationForm.control}
+                      name="email_notifications"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                              <FormLabel className="text-base font-medium">
+                                Email Notifications
+                              </FormLabel>
+                            </div>
+                            <FormDescription>
+                              Receive notifications via email for important updates
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={notificationForm.control}
+                      name="form_assignments"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <Settings className="w-4 h-4 text-muted-foreground" />
+                              <FormLabel className="text-base font-medium">
+                                Form Assignments
+                              </FormLabel>
+                            </div>
+                            <FormDescription>
+                              Get notified when forms are assigned to you
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={notificationForm.control}
+                      name="responses"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                              <FormLabel className="text-base font-medium">
+                                Response Notifications
+                              </FormLabel>
+                            </div>
+                            <FormDescription>
+                              Get notified when new responses are submitted
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={notificationForm.control}
+                      name="system_updates"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <Info className="w-4 h-4 text-muted-foreground" />
+                              <FormLabel className="text-base font-medium">
+                                System Updates
+                              </FormLabel>
+                            </div>
+                            <FormDescription>
+                              Receive notifications about system updates and maintenance
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex items-center gap-3 pt-4">
+                      <Button
+                        type="submit"
+                        disabled={
+                          updateNotifications.isPending || !notificationForm.formState.isDirty
+                        }
+                      >
+                        {updateNotifications.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Preferences
+                          </>
+                        )}
+                      </Button>
+                      {notificationForm.formState.isDirty && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => notificationForm.reset()}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Appearance Tab */}
+          <TabsContent value="appearance" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <Palette className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div>
+                    <CardTitle>Appearance Settings</CardTitle>
+                    <CardDescription>Customize how the application looks and feels</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <Form {...themeForm}>
+                  <form onSubmit={themeForm.handleSubmit(onThemeSubmit)} className="space-y-6">
+                    <FormField
+                      control={themeForm.control}
+                      name="theme"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Color Theme</FormLabel>
+                          <div className="grid grid-cols-3 gap-4 mt-2">
+                            {["light", "dark", "system"].map((theme) => (
+                              <div
+                                key={theme}
+                                onClick={() => field.onChange(theme)}
+                                className={`
+                                  relative rounded-lg border-2 p-4 cursor-pointer transition-all
+                                  ${
+                                    field.value === theme
+                                      ? "border-primary bg-primary/5"
+                                      : "border-border hover:border-primary/50 hover:bg-muted/50"
+                                  }
+                                `}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  {getThemeIcon(theme)}
+                                  <span className="text-sm font-medium capitalize">{theme}</span>
+                                  {field.value === theme && (
+                                    <CheckCircle2 className="w-4 h-4 text-primary absolute top-2 right-2" />
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <FormDescription>
+                            Choose your preferred color theme or follow system settings
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator />
+
+                    <FormField
+                      control={themeForm.control}
+                      name="compact_mode"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base font-medium">Compact Mode</FormLabel>
+                            <FormDescription>
+                              Use a more compact layout to fit more content on screen
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex items-center gap-3 pt-4">
+                      <Button
+                        type="submit"
+                        disabled={updateTheme.isPending || !themeForm.formState.isDirty}
+                      >
+                        {updateTheme.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Preferences
+                          </>
+                        )}
+                      </Button>
+                      {themeForm.formState.isDirty && (
+                        <Button type="button" variant="outline" onClick={() => themeForm.reset()}>
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Admin Tab */}
           {hasAdminAccess() && (
             <TabsContent value="admin" className="space-y-6">
-              <Card>
+              <Card className="border-destructive/20">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Database className="w-5 h-5" />
-                    Data Cleanup
-                  </CardTitle>
-                  <CardDescription>
-                    Permanently remove soft-deleted records from the database. This action cannot be
-                    undone.
-                  </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <Database className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-destructive">Data Cleanup</CardTitle>
+                      <CardDescription>
+                        Permanently remove soft-deleted records from the database
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <Separator />
+                <CardContent className="pt-6 space-y-6">
+                  {/* Warning Alert */}
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Warning:</strong> These operations permanently delete data from the
+                      database. This action cannot be undone. Make sure to backup your data before
+                      proceeding.
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Cleanup Actions */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">Clean up Deleted Forms</h3>
+                    {/* Forms Cleanup */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <h3 className="font-semibold text-foreground">Clean Deleted Forms</h3>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           Permanently remove all soft-deleted forms and their associated data
                         </p>
                       </div>
                       <Button
                         variant="destructive"
+                        size="sm"
                         onClick={handleCleanupForms}
                         disabled={cleanupForms.isPending}
+                        className="ml-4"
                       >
-                        {cleanupForms.isPending ? "Cleaning..." : "Clean Forms"}
+                        {cleanupForms.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cleaning...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Clean Forms
+                          </>
+                        )}
                       </Button>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">Clean up Deleted Responses</h3>
+                    {/* Responses Cleanup */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <h3 className="font-semibold text-foreground">Clean Deleted Responses</h3>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           Permanently remove all soft-deleted responses
                         </p>
                       </div>
                       <Button
                         variant="destructive"
+                        size="sm"
                         onClick={handleCleanupResponses}
                         disabled={cleanupResponses.isPending}
+                        className="ml-4"
                       >
-                        {cleanupResponses.isPending ? "Cleaning..." : "Clean Responses"}
+                        {cleanupResponses.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cleaning...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Clean Responses
+                          </>
+                        )}
                       </Button>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">Clean up Deleted Users</h3>
+                    {/* Users Cleanup */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <h3 className="font-semibold text-foreground">Clean Deleted Users</h3>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           Permanently remove all soft-deleted user accounts
                         </p>
                       </div>
                       <Button
                         variant="destructive"
+                        size="sm"
                         onClick={handleCleanupUsers}
                         disabled={cleanupUsers.isPending}
+                        className="ml-4"
                       >
-                        {cleanupUsers.isPending ? "Cleaning..." : "Clean Users"}
+                        {cleanupUsers.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cleaning...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Clean Users
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <svg
-                          className="h-5 w-5 text-yellow-400"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-yellow-800">Warning</h3>
-                        <div className="mt-2 text-sm text-yellow-700">
-                          <p>
-                            These operations permanently delete data from the database. Make sure to
-                            backup your data before proceeding. Soft-deleted records are normally
-                            excluded from queries but can be recovered if needed.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Info Alert */}
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Soft-deleted records are normally excluded from queries but can be recovered
+                      if needed. Use these cleanup operations only when you're certain the data is
+                      no longer required.
+                    </AlertDescription>
+                  </Alert>
                 </CardContent>
               </Card>
             </TabsContent>

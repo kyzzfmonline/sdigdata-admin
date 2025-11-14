@@ -90,8 +90,8 @@ export default function PreviewFormPage() {
           >
             <option value="">Select an option</option>
             {field.options?.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
@@ -107,15 +107,15 @@ export default function PreviewFormPage() {
             <span>{field.label}</span>
           </label>
         )
-      case "file": // Changed from "image"
+      case "file":
         return (
           <MediaUploader
-            accept={field.type === "file" ? field.accept || "*/*" : "image/*"} // Handle specific image type if needed, otherwise use field.accept
-            label={field.type === "file" ? "Upload File" : "Upload Image"}
+            accept={field.accept || "*/*"}
+            label="Upload File"
             onUploadSuccess={(url) => handleFieldChange(field.id, url)}
           />
         )
-      case "gps": // Changed from "location"
+      case "gps":
         return (
           <div className="p-3 border border-border rounded-md bg-muted text-muted-foreground">
             GPS location capture would be enabled on mobile

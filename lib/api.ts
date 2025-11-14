@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 import { useStore } from "./store"
 import { logger } from "./logger"
+import { API_TIMEOUT_MS } from "./constants"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -8,6 +9,7 @@ logger.info("API Base URL configured", { baseURL: API_BASE_URL })
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
 })
 
 logger.debug("Axios client created", { baseURL: apiClient.defaults.baseURL })
@@ -64,9 +66,9 @@ const isTokenExpired = (token: string): boolean => {
   }
 
   const currentTime = Math.floor(Date.now() / 1000)
-  const expirationBuffer = 5 * 60 // 5 minutes in seconds
+  const { TOKEN_EXPIRY_BUFFER_SECONDS } = require("./constants")
 
-  return decoded.exp - currentTime < expirationBuffer
+  return decoded.exp - currentTime < TOKEN_EXPIRY_BUFFER_SECONDS
 }
 
 /**
@@ -288,32 +290,102 @@ export const authAPI = {
 // Forms endpoints
 export const formsAPI = {
   getAll: (params?: { organization_id?: string; status?: string }) =>
-    apiClient.get("/forms", { params }),
-  getAssigned: () => apiClient.get("/forms/assigned"),
-  getById: (id: string) => apiClient.get(`/forms/${id}`),
-  create: (data: any) => apiClient.post("/forms", data),
-  update: (id: string, data: any) => apiClient.put(`/forms/${id}`, data),
-  publish: (id: string) => apiClient.post(`/forms/${id}/publish`),
+    apiClient.get("/v1/forms", { params }),
+  getAssigned: () => apiClient.get("/v1/forms/assigned"),
+  getById: (id: string) => apiClient.get(`/v1/forms/${id}`),
+  create: (data: import("./types").CreateFormInput) => apiClient.post("/v1/forms", data),
+  update: (id: string, data: import("./types").UpdateFormInput) =>
+    apiClient.put(`/v1/forms/${id}`, data),
+  publish: (id: string) => apiClient.post(`/v1/forms/${id}/publish`),
   assign: (
     id: string,
     data: { agent_ids: string[]; due_date?: string; target_responses?: number }
-  ) => apiClient.post(`/forms/${id}/assign`, data),
-  duplicate: (id: string) => apiClient.post(`/forms/${id}/duplicate`),
-  delete: (id: string) => apiClient.delete(`/forms/${id}`),
-  cleanup: () => apiClient.delete("/forms/cleanup"),
+  ) => apiClient.post(`/v1/forms/${id}/assign`, data),
+  duplicate: (id: string) => apiClient.post(`/v1/forms/${id}/duplicate`),
+  delete: (id: string) => apiClient.delete(`/v1/forms/${id}`),
+  cleanup: () => apiClient.delete("/v1/forms/cleanup"),
   export: (formId: string) =>
-    apiClient.get(`/forms/${formId}/export`, {
+    apiClient.get(`/v1/forms/${formId}/export`, {
       responseType: "blob",
     }),
-  getTemplates: () => apiClient.get("/forms/templates"),
+  getTemplates: () => apiClient.get("/v1/forms/templates"),
+
+  // Form Locking
+  acquireLock: (id: string, timeoutSeconds = 300) =>
+    apiClient.post(`/v1/forms/${id}/lock`, { lock_timeout_seconds: timeoutSeconds }),
+  releaseLock: (id: string) => apiClient.delete(`/v1/forms/${id}/lock`),
+  forceUnlock: (id: string) => apiClient.post(`/v1/forms/${id}/lock/force-unlock`),
+  getLockStatus: (id: string) => apiClient.get(`/v1/forms/${id}/lock/status`),
+
+  // Form Versioning
+  getVersions: (id: string) => apiClient.get(`/v1/forms/${id}/versions`),
+  getVersion: (id: string, versionNumber: number) =>
+    apiClient.get(`/v1/forms/${id}/versions/${versionNumber}`),
+  restoreVersion: (id: string, versionNumber: number) =>
+    apiClient.post(`/v1/forms/${id}/versions/${versionNumber}/restore`),
+  compareVersions: (id: string, versionA: number, versionB: number) =>
+    apiClient.get(`/v1/forms/${id}/versions/compare`, {
+      params: { version_a: versionA, version_b: versionB },
+    }),
+  getChangeLog: (
+    id: string,
+    params?: { start_version?: number; end_version?: number; change_type?: string }
+  ) => apiClient.get(`/v1/forms/${id}/versions/change-log`, { params }),
+
+  // Conditional Logic
+  createConditionalRule: (formId: string, data: any) =>
+    apiClient.post(`/v1/forms/${formId}/conditional-rules`, data),
+  getConditionalRules: (formId: string, params?: { rule_type?: string; is_active?: boolean }) =>
+    apiClient.get(`/v1/forms/${formId}/conditional-rules`, { params }),
+  updateConditionalRule: (formId: string, ruleId: string, data: any) =>
+    apiClient.put(`/v1/forms/${formId}/conditional-rules/${ruleId}`, data),
+  deleteConditionalRule: (formId: string, ruleId: string) =>
+    apiClient.delete(`/v1/forms/${formId}/conditional-rules/${ruleId}`),
+  evaluateConditionalRules: (formId: string, formData: Record<string, any>) =>
+    apiClient.post(`/v1/forms/${formId}/conditional-rules/evaluate`, { form_data: formData }),
+
+  // Validation Rules
+  createValidationRule: (formId: string, data: any) =>
+    apiClient.post(`/v1/forms/${formId}/validation-rules`, data),
+  getValidationRules: (formId: string, params?: { field_id?: string; is_active?: boolean }) =>
+    apiClient.get(`/v1/forms/${formId}/validation-rules`, { params }),
+  updateValidationRule: (formId: string, ruleId: string, data: any) =>
+    apiClient.put(`/v1/forms/${formId}/validation-rules/${ruleId}`, data),
+  deleteValidationRule: (formId: string, ruleId: string) =>
+    apiClient.delete(`/v1/forms/${formId}/validation-rules/${ruleId}`),
+  validateFormData: (formId: string, formData: Record<string, any>, partial = false) =>
+    apiClient.post(`/v1/forms/${formId}/validation-rules/validate`, {
+      form_data: formData,
+      partial,
+    }),
+}
+
+// Form Templates endpoints
+export const templatesAPI = {
+  getAll: (params?: {
+    category?: string
+    search?: string
+    is_public?: boolean
+    organization_id?: string
+    sort?: string
+    order?: "asc" | "desc"
+    page?: number
+    limit?: number
+  }) => apiClient.get("/v1/form-templates", { params }),
+  getPopular: () => apiClient.get("/v1/form-templates/popular"),
+  getById: (id: string) => apiClient.get(`/v1/form-templates/${id}`),
+  create: (data: any) => apiClient.post("/v1/form-templates", data),
+  update: (id: string, data: any) => apiClient.put(`/v1/form-templates/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/v1/form-templates/${id}`),
+  useTemplate: (id: string, data: { title: string; organization_id: string }) =>
+    apiClient.post(`/v1/form-templates/${id}/use`, data),
 }
 
 // Responses endpoints
 export const responsesAPI = {
   getAll: (params?: { form_id?: string }) => apiClient.get("/responses", { params }),
   getById: (id: string) => apiClient.get(`/responses/${id}`),
-  create: (data: { form_id: string; data: any; attachments?: Record<string, string> }) =>
-    apiClient.post("/responses", data),
+  create: (data: import("./types").CreateResponseInput) => apiClient.post("/responses", data),
   delete: (id: string) => apiClient.delete(`/responses/${id}`),
   cleanup: () => apiClient.delete("/responses/cleanup"),
   // New view modes
@@ -361,16 +433,18 @@ export const usersAPI = {
     order?: "asc" | "desc"
   }) => apiClient.get("/users", { params }),
   getMe: () => apiClient.get("/users/me"),
-  updateMe: (data: any) => apiClient.put("/users/me", data),
+  updateMe: (data: import("./types").UpdateUserInput) => apiClient.put("/users/me", data),
   changePassword: (currentPassword: string, newPassword: string) =>
     apiClient.post("/users/me/password", {
       current_password: currentPassword,
       new_password: newPassword,
     }),
   getNotifications: () => apiClient.get("/users/me/notifications"),
-  updateNotifications: (data: any) => apiClient.put("/users/me/notifications", data),
+  updateNotifications: (data: import("./types").UpdateNotificationPreferencesInput) =>
+    apiClient.put("/users/me/notifications", data),
   getPreferences: () => apiClient.get("/users/me/preferences"),
-  updatePreferences: (data: any) => apiClient.put("/users/me/preferences", data),
+  updatePreferences: (data: import("./types").UpdatePreferencesInput) =>
+    apiClient.put("/users/me/preferences", data),
   // Roles and permissions
   getRoles: () => apiClient.get("/users/roles"),
   getPermissions: () => apiClient.get("/users/permissions"),
@@ -436,4 +510,99 @@ export const healthAPI = {
 export const searchAPI = {
   global: (params: { q: string; type?: "all" | "forms" | "responses" | "users"; limit?: number }) =>
     apiClient.get("/search/global", { params }),
+}
+
+// RBAC endpoints
+export const rbacAPI = {
+  // Roles
+  getRoles: () => apiClient.get("/rbac/roles"),
+  getRole: (id: string) => apiClient.get(`/rbac/roles/${id}`),
+  createRole: (data: { name: string; description?: string; level?: number }) =>
+    apiClient.post("/rbac/roles", data),
+  updateRole: (id: string, data: { name?: string; description?: string; level?: number }) =>
+    apiClient.put(`/rbac/roles/${id}`, data),
+  deleteRole: (id: string) => apiClient.delete(`/rbac/roles/${id}`),
+
+  // Permissions
+  getPermissions: (params?: { resource?: string; action?: string }) =>
+    apiClient.get("/rbac/permissions", { params }),
+  createPermission: (data: {
+    name: string
+    resource: string
+    action: string
+    description?: string
+  }) => apiClient.post("/rbac/permissions", data),
+  deletePermission: (id: string) => apiClient.delete(`/rbac/permissions/${id}`),
+
+  // Role-Permissions
+  getRolePermissions: (roleId: string) => apiClient.get(`/rbac/roles/${roleId}/permissions`),
+  assignPermissionsToRole: (roleId: string, data: { permission_ids: string[] }) =>
+    apiClient.post(`/rbac/roles/${roleId}/permissions`, data),
+  revokePermissionsFromRole: (roleId: string, data: { permission_ids: string[] }) =>
+    apiClient.delete(`/rbac/roles/${roleId}/permissions`, { data }),
+
+  // User-Roles
+  getUserRoles: (userId: string) => apiClient.get(`/rbac/users/${userId}/roles`),
+  assignRoleToUser: (userId: string, data: { role_id: string }) =>
+    apiClient.post(`/rbac/users/${userId}/roles`, data),
+  revokeRoleFromUser: (userId: string, roleId: string) =>
+    apiClient.delete(`/rbac/users/${userId}/roles/${roleId}`),
+  getUserPermissions: (userId: string) => apiClient.get(`/rbac/users/${userId}/permissions`),
+  getRoleUsers: (roleId: string) => apiClient.get(`/rbac/roles/${roleId}/users`),
+}
+
+// Session Management endpoints
+export const sessionAPI = {
+  getSessions: () => apiClient.get("/v1/users/me/sessions"),
+  revokeSession: (sessionId: string) => apiClient.delete(`/v1/users/me/sessions/${sessionId}`),
+  revokeAllSessions: () => apiClient.delete("/v1/users/me/sessions"),
+}
+
+// API Keys endpoints
+export const apiKeysAPI = {
+  getApiKeys: () => apiClient.get("/v1/users/me/api-keys"),
+  createApiKey: (data: import("./types").CreateApiKeyInput) =>
+    apiClient.post("/v1/users/me/api-keys", data),
+  revokeApiKey: (keyId: string) => apiClient.delete(`/v1/users/me/api-keys/${keyId}`),
+  rotateApiKey: (keyId: string) => apiClient.post(`/v1/users/me/api-keys/${keyId}/rotate`),
+  getApiKeyUsage: (keyId: string) => apiClient.get(`/v1/users/me/api-keys/${keyId}/usage`),
+}
+
+// Audit Logs endpoints
+export const auditAPI = {
+  getAuditLogs: (params?: {
+    user_id?: string
+    action_type?: string
+    resource_type?: string
+    severity?: string
+    start_date?: string
+    end_date?: string
+    page?: number
+    limit?: number
+  }) => apiClient.get("/v1/audit-logs", { params }),
+  exportAuditLogs: (params?: {
+    format?: "csv" | "json" | "xlsx"
+    start_date?: string
+    end_date?: string
+  }) =>
+    apiClient.get("/v1/audit-logs/export", {
+      params,
+      responseType: "blob",
+    }),
+  getSecurityEvents: () => apiClient.get("/v1/audit-logs/security-events"),
+  getUserActivityLog: (userId: string) => apiClient.get(`/v1/users/${userId}/activity-log`),
+  getUserPermissionHistory: (userId: string) =>
+    apiClient.get(`/v1/users/${userId}/permission-history`),
+}
+
+// Webhooks endpoints
+export const webhooksAPI = {
+  getWebhooks: () => apiClient.get("/v1/webhooks"),
+  createWebhook: (data: import("./types").CreateWebhookInput) =>
+    apiClient.post("/v1/webhooks", data),
+  updateWebhook: (id: string, data: Partial<import("./types").CreateWebhookInput>) =>
+    apiClient.put(`/v1/webhooks/${id}`, data),
+  deleteWebhook: (id: string) => apiClient.delete(`/v1/webhooks/${id}`),
+  testWebhook: (id: string) => apiClient.post(`/v1/webhooks/${id}/test`),
+  getWebhookLogs: (id: string) => apiClient.get(`/v1/webhooks/${id}/logs`),
 }
