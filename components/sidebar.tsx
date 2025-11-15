@@ -49,7 +49,7 @@ const adminNavigation = [
     href: "/templates",
     icon: LayoutGrid,
     description: "Form Templates",
-    badge: "New",
+    badge: null,
     permission: null,
   },
   {
@@ -201,6 +201,9 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
       initial={false}
       animate={{ width: isCollapsed ? 64 : 256 }}
     >
+      {/* Kente-inspired accent stripe */}
+      <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-[#FDB927] via-[#006B3F] to-[#CE1126] opacity-60" />
+
       {/* Collapse Toggle Button */}
       <Button
         variant="ghost"
@@ -213,9 +216,12 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
       </Button>
 
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
+      <div className="p-4 border-b border-sidebar-border relative">
+        {/* Subtle kente accent pattern */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FDB927] via-[#006B3F] to-[#CE1126] opacity-40" />
+
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#006B3F] to-primary flex items-center justify-center flex-shrink-0 shadow-sm">
             <Shield className="w-5 h-5 text-primary-foreground" />
           </div>
           <AnimatePresence>
@@ -247,7 +253,9 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
                 </h2>
               </div>
             )}
-            {section.title && isCollapsed && <div className="h-px bg-sidebar-border mb-2 mx-2" />}
+            {section.title && isCollapsed && (
+              <div className="mb-2 mx-2 h-px bg-gradient-to-r from-[#FDB927]/20 via-[#006B3F]/20 to-[#CE1126]/20" />
+            )}
 
             {/* Section Items */}
             <div className="space-y-1">
@@ -266,8 +274,8 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium group relative overflow-hidden",
                         isActive
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm border-l-2 border-[#FDB927]"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:border-l-2 hover:border-[#FDB927]/30",
                         isCollapsed && "justify-center px-2"
                       )}
                       aria-current={isActive ? "page" : undefined}

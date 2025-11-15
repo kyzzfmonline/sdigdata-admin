@@ -46,11 +46,10 @@ import {
 import {
   Search as SearchIcon,
   FileText,
-  Star,
+  Bookmark,
   Copy,
   TrendingUp,
   Filter,
-  Sparkles,
   Eye,
   Plus,
   Loader2,
@@ -133,19 +132,20 @@ export default function TemplatesPage() {
 
   return (
     <LayoutWrapper>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Sparkles className="h-8 w-8 text-primary" />
-              Form Templates
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Start with a template to create forms faster
-            </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <FileText className="h-8 w-8 text-primary" />
+                Form Templates
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Start with a template to create forms faster
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Search and Filters */}
         <Card>
@@ -183,7 +183,7 @@ export default function TemplatesPage() {
           <TabsList>
             <TabsTrigger value="all">All Templates</TabsTrigger>
             <TabsTrigger value="featured">
-              <Star className="h-4 w-4 mr-1" />
+              <Bookmark className="h-4 w-4 mr-1" />
               Featured
             </TabsTrigger>
             <TabsTrigger value="popular">
@@ -223,7 +223,7 @@ export default function TemplatesPage() {
                         </div>
                         {template.is_featured && (
                           <Badge variant="default" className="ml-2">
-                            <Star className="h-3 w-3 mr-1" />
+                            <Bookmark className="h-3 w-3 mr-1" />
                             Featured
                           </Badge>
                         )}
@@ -246,7 +246,7 @@ export default function TemplatesPage() {
                           </div>
                           {(template as any).average_rating !== undefined && (
                             <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <Bookmark className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               <span>{(template as any).average_rating.toFixed(1)}</span>
                             </div>
                           )}
@@ -297,7 +297,7 @@ export default function TemplatesPage() {
                   >
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                        <Bookmark className="h-5 w-5 text-yellow-400 fill-yellow-400" />
                         {template.name}
                       </CardTitle>
                       <CardDescription>{template.description}</CardDescription>
@@ -319,7 +319,7 @@ export default function TemplatesPage() {
                           </div>
                           {(template as any).average_rating !== undefined && (
                             <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <Bookmark className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               <span>{(template as any).average_rating.toFixed(1)}</span>
                             </div>
                           )}
@@ -350,7 +350,7 @@ export default function TemplatesPage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <Star className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <Bookmark className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold">No featured templates</h3>
               </div>
             )}
@@ -386,7 +386,7 @@ export default function TemplatesPage() {
                           </div>
                           {(template as any).average_rating !== undefined && (
                             <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <Bookmark className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               <span>{(template as any).average_rating.toFixed(1)}</span>
                             </div>
                           )}
@@ -506,7 +506,7 @@ export default function TemplatesPage() {
                         <div>
                           <span className="text-muted-foreground">Rating:</span>
                           <span className="ml-2 font-medium flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <Bookmark className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                             {(previewTemplate as any).average_rating.toFixed(1)}
                           </span>
                         </div>
@@ -567,6 +567,7 @@ export default function TemplatesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </LayoutWrapper>
   )

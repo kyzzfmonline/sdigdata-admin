@@ -14,7 +14,7 @@ import {
   Clock,
   Target,
   Activity,
-  Zap,
+  Settings,
   Award,
   Calendar,
   Download,
@@ -673,7 +673,7 @@ export default function AnalyticsPage() {
             <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
+                  <Settings className="h-5 w-5 text-primary" />
                   Validation Success Rate
                 </CardTitle>
               </CardHeader>

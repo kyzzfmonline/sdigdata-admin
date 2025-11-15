@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useFormBuilderContext } from "./FormBuilderProvider"
 import { FieldEditorContainer } from "./FieldEditor/FieldEditorContainer"
-import { FileQuestion, Sparkles } from "lucide-react"
+import { FileQuestion, Eye, Layout } from "lucide-react"
 import { FormRenderer } from "@/components/form-renderer"
 
 export function FormBuilderCanvas() {
@@ -35,7 +35,7 @@ export function FormBuilderCanvas() {
         <Card className="p-6 bg-gradient-to-r from-primary/5 to-purple-500/5 border-primary/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Eye className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Preview Mode</h3>
@@ -74,7 +74,7 @@ export function FormBuilderCanvas() {
           <div className="flex gap-3">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <Layout className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
             <div className="text-xs space-y-1">
@@ -198,7 +198,7 @@ export function FormBuilderCanvas() {
         <Card className="p-4 bg-muted/30 border-dashed">
           <div className="flex gap-3 items-start">
             <div className="flex-shrink-0 mt-0.5">
-              <Sparkles className="w-4 h-4 text-muted-foreground" />
+              <Layout className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p className="font-medium">Tips for building better forms:</p>

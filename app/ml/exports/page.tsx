@@ -51,7 +51,7 @@ import {
   Clock,
   Trash2,
   Plus,
-  Sparkles,
+  Award,
   BarChart3,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -251,7 +251,7 @@ export default function MLExportsPage() {
           <Card className="border-yellow-500/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-yellow-600" />
+                <Award className="h-5 w-5 text-yellow-600" />
                 Data Quality Recommendations
               </CardTitle>
             </CardHeader>

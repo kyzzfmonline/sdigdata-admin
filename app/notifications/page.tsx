@@ -55,7 +55,7 @@ import {
   Clock,
   AlertCircle,
   Info,
-  Sparkles,
+  Bell,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
@@ -268,7 +268,7 @@ export default function NotificationsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Unread</CardTitle>
-                <Sparkles className="h-4 w-4 text-blue-600" />
+                <Bell className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">{stats.unread_count}</div>

@@ -37,7 +37,9 @@ export function Topbar({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Topba
   }
 
   return (
-    <header className="bg-card border-b border-border px-4 sm:px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-40 shadow-sm">
+    <header className="bg-card border-b border-border px-4 sm:px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-40 shadow-sm relative">
+      {/* Subtle kente accent stripe at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FDB927]/30 via-[#006B3F]/30 to-[#CE1126]/30" />
       {/* Left: Desktop Sidebar Toggle + Mobile Menu + Breadcrumbs */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Desktop Sidebar Toggle */}
@@ -122,7 +124,10 @@ export function Topbar({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Topba
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.username}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                <Badge variant="outline" className="w-fit mt-1 text-xs">
+                <Badge
+                  variant="outline"
+                  className="w-fit mt-1 text-xs bg-gradient-to-r from-[#FDB927]/10 to-[#006B3F]/10 border-[#FDB927]/30"
+                >
                   {roles.length > 0 ? roles[0].name : user?.role}
                 </Badge>
               </div>

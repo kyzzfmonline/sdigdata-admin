@@ -61,7 +61,7 @@ import {
   MoveDown,
   AlertCircle,
   CheckCircle2,
-  Zap,
+  GitBranch,
   Settings,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -297,7 +297,7 @@ export default function ConditionalLogicPage() {
         <Card className="border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/10">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-600" />
+              <GitBranch className="h-5 w-5 text-blue-600" />
               How Conditional Logic Works
             </CardTitle>
           </CardHeader>

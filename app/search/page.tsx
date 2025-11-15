@@ -44,7 +44,7 @@ import {
   Save,
   Clock,
   TrendingUp,
-  Star,
+  Award,
   Trash2,
   FileText,
   Users,
@@ -397,7 +397,7 @@ export default function AdvancedSearchPage() {
           <Tabs defaultValue="saved" className="space-y-4">
             <TabsList>
               <TabsTrigger value="saved">
-                <Star className="h-4 w-4 mr-1" />
+                <Award className="h-4 w-4 mr-1" />
                 Saved Searches
               </TabsTrigger>
               <TabsTrigger value="recent">
@@ -459,7 +459,7 @@ export default function AdvancedSearchPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <Star className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                      <Award className="mx-auto h-12 w-12 text-muted-foreground/50" />
                       <p className="text-sm text-muted-foreground mt-2">No saved searches yet</p>
                     </div>
                   )}

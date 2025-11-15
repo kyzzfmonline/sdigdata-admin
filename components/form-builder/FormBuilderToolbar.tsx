@@ -8,7 +8,7 @@
 import { Button } from "@/components/ui/button"
 import {
   Save,
-  Sparkles,
+  Send,
   Eye,
   EyeOff,
   Undo2,
@@ -221,7 +221,7 @@ export function FormBuilderToolbar({ onSave, isSaving }: FormBuilderToolbarProps
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Send className="w-4 h-4" />
                   <span className="hidden sm:inline">Publish</span>
                 </>
               )}
