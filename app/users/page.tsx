@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header"
 
 export default function UsersPage() {
   return (
-    <RouteGuard permissions={["users.admin", "users.create", "users.read"]}>
+    <RouteGuard permissions={["users:admin", "users:create", "users:read"]}>
       <LayoutWrapper>
         <PageHeader
           title="Users"

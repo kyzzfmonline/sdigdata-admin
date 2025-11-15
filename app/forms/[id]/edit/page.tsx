@@ -39,7 +39,7 @@ export default function EditFormPage() {
 
   if (isLoading) {
     return (
-      <RouteGuard permission="forms.edit">
+      <RouteGuard permission="forms:edit">
         <LayoutWrapper>
           <div className="p-8 flex items-center justify-center h-screen">
             <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -51,7 +51,7 @@ export default function EditFormPage() {
 
   if (!form) {
     return (
-      <RouteGuard permission="forms.edit">
+      <RouteGuard permission="forms:edit">
         <LayoutWrapper>
           <div className="p-8 text-center">
             <p className="text-muted-foreground">Form not found</p>
@@ -62,7 +62,7 @@ export default function EditFormPage() {
   }
 
   return (
-    <RouteGuard permission="forms.edit">
+    <RouteGuard permission="forms:edit">
       <LayoutWrapper>
         <FormBuilder initialForm={form} autoLock={true} enableAutosave={true} />
       </LayoutWrapper>

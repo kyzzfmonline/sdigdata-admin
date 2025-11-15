@@ -154,14 +154,14 @@ export function FormsListTable() {
 
         return (
           <div className="flex items-center justify-end gap-2">
-            {hasPermission("forms.read") && (
+            {hasPermission("forms:read") && (
               <Link href={`/forms/${form.id}/preview`}>
                 <Button variant="ghost" size="icon" title="Preview">
                   <Eye className="h-4 w-4" />
                 </Button>
               </Link>
             )}
-            {hasPermission("forms.update") && (
+            {hasPermission("forms:update") && (
               <Link href={`/forms/${form.id}/edit`}>
                 <Button variant="ghost" size="icon" title="Edit">
                   <Edit className="h-4 w-4" />
@@ -179,19 +179,19 @@ export function FormsListTable() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {form.status === "draft" && hasPermission("forms.update") && (
+                {form.status === "draft" && hasPermission("forms:update") && (
                   <DropdownMenuItem onClick={() => handlePublish(form.id)}>
                     <Send className="mr-2 h-4 w-4" />
                     Publish
                   </DropdownMenuItem>
                 )}
-                {form.status === "published" && hasPermission("forms.read") && (
+                {form.status === "published" && hasPermission("forms:read") && (
                   <DropdownMenuItem onClick={() => handleShare(form)}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Share Public Link
                   </DropdownMenuItem>
                 )}
-                {hasPermission("forms.assign") && (
+                {hasPermission("forms:assign") && (
                   <DropdownMenuItem asChild>
                     <Link href={`/forms/${form.id}/assign`}>
                       <UserPlus className="mr-2 h-4 w-4" />
@@ -200,7 +200,7 @@ export function FormsListTable() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                {hasPermission("forms.delete") && (
+                {hasPermission("forms:delete") && (
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={() => setDeleteFormId(form.id)}
@@ -248,7 +248,7 @@ export function FormsListTable() {
         ]}
         onRowDoubleClick={handleRowDoubleClick}
         bulkActions={
-          hasPermission("forms.delete")
+          hasPermission("forms:delete")
             ? [
                 {
                   label: "Delete Selected",

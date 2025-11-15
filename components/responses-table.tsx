@@ -292,9 +292,9 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
   const filteredForms = forms.filter((f: Form) => f.status === "published")
 
   // Check permissions
-  const canViewResponses = hasPermission("responses.read")
-  const canDeleteResponses = hasPermission("responses.delete")
-  const canExportResponses = hasPermission("responses.export")
+  const canViewResponses = hasPermission("responses:read")
+  const canDeleteResponses = hasPermission("responses:delete")
+  const canExportResponses = hasPermission("responses:export")
 
   if (!canViewResponses) {
     return (

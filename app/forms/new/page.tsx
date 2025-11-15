@@ -6,7 +6,7 @@ import { RouteGuard } from "@/components/route-guard"
 
 export default function NewFormPage() {
   return (
-    <RouteGuard permission="forms.create">
+    <RouteGuard permission="forms:create">
       <LayoutWrapper>
         <FormBuilder autoLock={false} enableAutosave={false} />
       </LayoutWrapper>

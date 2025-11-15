@@ -54,7 +54,7 @@ export function RoleManagement() {
     if (hasRole("super_admin")) {
       // Super admin can assign any role
       return roles
-    } else if (hasRole("system_admin")) {
+    } else if (hasRole("system:admin")) {
       // System admin can assign roles below super_admin
       return roles.filter((role) => role.name !== "super_admin")
     } else if (hasRole("org_admin")) {
@@ -72,7 +72,7 @@ export function RoleManagement() {
   const { toast } = useToast()
 
   // Check if user can manage roles - allow admin roles or specific permissions
-  const canManageRoles = hasAdminAccess() || hasAnyPermission(["roles.admin", "permissions.admin"])
+  const canManageRoles = hasAdminAccess() || hasAnyPermission(["roles:admin", "permissions:admin"])
 
   if (!canManageRoles) {
     return (
@@ -223,12 +223,12 @@ export function RoleManagement() {
                 Super Admin: Full access to assign any role
               </span>
             )}
-            {hasRole("system_admin") && !hasRole("super_admin") && (
+            {hasRole("system:admin") && !hasRole("super_admin") && (
               <span className="block text-sm text-blue-600 mt-1">
                 System Admin: Can assign all roles except super_admin
               </span>
             )}
-            {hasRole("org_admin") && !hasRole("system_admin") && (
+            {hasRole("org_admin") && !hasRole("system:admin") && (
               <span className="block text-sm text-orange-600 mt-1">
                 Org Admin: Limited to basic roles (agent, viewer, supervisor)
               </span>

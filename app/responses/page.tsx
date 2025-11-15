@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header"
 
 export default function ResponsesPage() {
   return (
-    <RouteGuard permission="responses.read">
+    <RouteGuard permission="responses:read">
       <LayoutWrapper>
         <PageHeader
           title="Responses"

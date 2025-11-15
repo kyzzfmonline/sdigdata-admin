@@ -154,7 +154,7 @@ export function UserManagementTable() {
   }
 
   const handleBulkDelete = (selectedUsers: User[]) => {
-    const canDeleteUsers = hasPermission("users.delete")
+    const canDeleteUsers = hasPermission("users:delete")
     if (!canDeleteUsers) {
       toast({
         title: "Permission Denied",
@@ -282,8 +282,8 @@ export function UserManagementTable() {
   )
 
   // Check permissions
-  const canManageUsers = hasAnyPermission(["users:admin", "users.create", "users.read"])
-  const canCreateUsers = hasPermission("users.create")
+  const canManageUsers = hasAnyPermission(["users:admin", "users:create", "users:read"])
+  const canCreateUsers = hasPermission("users:create")
 
   if (!canManageUsers) {
     return (
@@ -364,7 +364,7 @@ export function UserManagementTable() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const userItem = row.original
-        const canDeleteUsers = hasPermission("users.delete")
+        const canDeleteUsers = hasPermission("users:delete")
         const canManageRoles = hasPermission("users:admin")
 
         return (
@@ -516,7 +516,7 @@ export function UserManagementTable() {
         searchPlaceholder="Search users..."
         onRowDoubleClick={handleRowDoubleClick}
         bulkActions={
-          hasPermission("users.delete")
+          hasPermission("users:delete")
             ? [
                 {
                   label: "Delete Selected",

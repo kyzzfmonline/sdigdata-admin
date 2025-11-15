@@ -93,13 +93,103 @@ export const TOAST_DURATION = {
 } as const
 
 // Permission Names (for type safety)
+// STANDARDIZED: Now uses colon format (resource:action) to match backend
 export const PERMISSIONS = {
-  FORMS_CREATE: "forms.create",
-  FORMS_READ: "forms.read",
-  FORMS_UPDATE: "forms.update",
-  FORMS_DELETE: "forms.delete",
-  FORMS_PUBLISH: "forms.publish",
-  RESPONSES_READ: "responses.read",
-  RESPONSES_EXPORT: "responses.export",
-  USERS_ADMIN: "users.admin",
+  // Forms Permissions
+  FORMS_CREATE: "forms:create",
+  FORMS_READ: "forms:read",
+  FORMS_UPDATE: "forms:update",
+  FORMS_DELETE: "forms:delete",
+  FORMS_PUBLISH: "forms:publish",
+  FORMS_EDIT: "forms:edit",
+  FORMS_ASSIGN: "forms:assign",
+  FORMS_ADMIN: "forms:admin",
+
+  // Responses Permissions
+  RESPONSES_READ: "responses:read",
+  RESPONSES_CREATE: "responses:create",
+  RESPONSES_DELETE: "responses:delete",
+  RESPONSES_EXPORT: "responses:export",
+  RESPONSES_UPDATE: "responses:update",
+
+  // Users Permissions
+  USERS_ADMIN: "users:admin",
+  USERS_CREATE: "users:create",
+  USERS_READ: "users:read",
+  USERS_DELETE: "users:delete",
+  USERS_UPDATE: "users:update",
+  USERS_MANAGE_ROLES: "users:manage_roles",
+
+  // Roles & Permissions
+  ROLES_ADMIN: "roles:admin",
+  PERMISSIONS_ADMIN: "permissions:admin",
+
+  // Analytics Permissions
+  ANALYTICS_VIEW: "analytics:view",
+  ANALYTICS_EXPORT: "analytics:export",
+
+  // System Permissions
+  SYSTEM_ADMIN: "system:admin",
+  SYSTEM_CLEANUP: "system:cleanup",
+  SYSTEM_AUDIT: "system:audit",
+
+  // Organizations Permissions
+  ORGANIZATIONS_CREATE: "organizations:create",
+  ORGANIZATIONS_READ: "organizations:read",
+  ORGANIZATIONS_UPDATE: "organizations:update",
+  ORGANIZATIONS_DELETE: "organizations:delete",
+
+  // Reputation Permissions
+  REPUTATION_VIEW: "reputation:view",
+  REPUTATION_MANAGE: "reputation:manage",
+
+  // Translations Permissions
+  TRANSLATIONS_SUBMIT: "translations:submit",
+  TRANSLATIONS_REVIEW: "translations:review",
+  TRANSLATIONS_MODERATE: "translations:moderate",
+  TRANSLATIONS_IMPORT: "translations:import",
+  TRANSLATIONS_EXPORT: "translations:export",
 } as const
+
+// All backend permissions (37 total) - matches backend exactly
+export const ALL_PERMISSIONS = [
+  "analytics:export",
+  "analytics:view",
+  "forms:admin",
+  "forms:assign",
+  "forms:create",
+  "forms:delete",
+  "forms:edit",
+  "forms:publish",
+  "forms:read",
+  "forms:update",
+  "organizations:create",
+  "organizations:delete",
+  "organizations:read",
+  "organizations:update",
+  "permissions:admin",
+  "reputation:manage",
+  "reputation:view",
+  "responses:create",
+  "responses:delete",
+  "responses:export",
+  "responses:read",
+  "responses:update",
+  "roles:admin",
+  "system:admin",
+  "system:audit",
+  "system:cleanup",
+  "translations:export",
+  "translations:import",
+  "translations:moderate",
+  "translations:review",
+  "translations:submit",
+  "users:admin",
+  "users:create",
+  "users:delete",
+  "users:manage_roles",
+  "users:read",
+  "users:update",
+] as const
+
+export type Permission = (typeof ALL_PERMISSIONS)[number]

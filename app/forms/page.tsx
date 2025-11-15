@@ -15,14 +15,14 @@ export default function FormsPage() {
   const { hasPermission } = usePermissions()
 
   return (
-    <RouteGuard permissions={["forms.read", "forms.create", "forms.update", "forms.delete"]}>
+    <RouteGuard permissions={["forms:read", "forms:create", "forms:update", "forms:delete"]}>
       <LayoutWrapper>
         <PageHeader
           title="Forms"
           description="Create and manage data collection forms"
           breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Forms" }]}
           action={
-            hasPermission("forms.create") && (
+            hasPermission("forms:create") && (
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link href="/forms/new">
                   <Button className="gap-2 shadow-lg hover:shadow-xl transition-all duration-300">
