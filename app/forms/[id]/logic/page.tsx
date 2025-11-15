@@ -61,7 +61,6 @@ import {
   MoveDown,
   AlertCircle,
   CheckCircle2,
-  GitBranch,
   Settings,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
