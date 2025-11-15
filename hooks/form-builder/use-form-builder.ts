@@ -158,6 +158,7 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
         // Then get the lock status
         const statusRes = await formsAPI.getLockStatus(formId)
         if (statusRes.data.success && statusRes.data.data) {
+          console.log("[LOCK DEBUG] Lock status received:", JSON.stringify(statusRes.data.data, null, 2))
           setLockStatus(statusRes.data.data)
         }
 
