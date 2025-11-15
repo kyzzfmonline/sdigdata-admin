@@ -5,7 +5,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import type { FormField, FormBranding, Form } from "@/lib/types"
-import type { ConditionalRule, ValidationRule, FormLock } from "@/lib/types-extended"
+import type { ConditionalRule, ValidationRule } from "@/lib/types-extended"
+import type { LockStatus } from "@/hooks/forms/use-form-locking"
 import { generateFieldId, sanitizeFormField } from "@/lib/security"
 import { useFormHistory } from "./use-form-history"
 import { formsAPI } from "@/lib/api"
@@ -40,7 +41,7 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
   // Feature state
   const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>([])
   const [validationRules, setValidationRules] = useState<ValidationRule[]>([])
-  const [lockStatus, setLockStatus] = useState<FormLock | null>(null)
+  const [lockStatus, setLockStatus] = useState<LockStatus | null>(null)
   const [currentVersion, setCurrentVersion] = useState(initialForm?.version || 1)
 
   // UI state
@@ -151,30 +152,26 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
 
     const acquireLock = async () => {
       try {
-        const response = await formsAPI.acquireLock(formId)
-        if (response.data.success && response.data.data) {
-          setLockStatus({
-            is_locked: true,
-            locked_by: {
-              id: currentUser?.id || "",
-              username: currentUser?.username || "",
-            },
-            locked_at: new Date().toISOString(),
-            lock_expires_at: response.data.data.lock_expires_at,
-          })
+        // First acquire the lock
+        await formsAPI.acquireLock(formId)
 
-          // Set up periodic lock status check
-          lockCheckInterval.current = setInterval(async () => {
-            try {
-              const statusRes = await formsAPI.getLockStatus(formId)
-              if (statusRes.data.success) {
-                setLockStatus(statusRes.data.data)
-              }
-            } catch (error) {
-              console.error("Lock status check failed:", error)
-            }
-          }, 30000) // Check every 30 seconds
+        // Then get the lock status
+        const statusRes = await formsAPI.getLockStatus(formId)
+        if (statusRes.data.success && statusRes.data.data) {
+          setLockStatus(statusRes.data.data)
         }
+
+        // Set up periodic lock status check
+        lockCheckInterval.current = setInterval(async () => {
+          try {
+            const statusRes = await formsAPI.getLockStatus(formId)
+            if (statusRes.data.success && statusRes.data.data) {
+              setLockStatus(statusRes.data.data)
+            }
+          } catch (error) {
+            console.error("Lock status check failed:", error)
+          }
+        }, 30000) // Check every 30 seconds
       } catch (error: any) {
         if (error.response?.status === 409) {
           // Form is locked by another user

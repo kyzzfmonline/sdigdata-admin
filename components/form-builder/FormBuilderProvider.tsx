@@ -7,7 +7,8 @@
 
 import React, { createContext, useContext, type ReactNode } from "react"
 import type { FormField, FormBranding, Form } from "@/lib/types"
-import type { ConditionalRule, ValidationRule, FormLock } from "@/lib/types-extended"
+import type { ConditionalRule, ValidationRule } from "@/lib/types-extended"
+import type { LockStatus } from "@/hooks/forms/use-form-locking"
 import { useFormBuilder } from "@/hooks/form-builder/use-form-builder"
 
 interface FormBuilderContextValue {
@@ -22,7 +23,7 @@ interface FormBuilderContextValue {
   // Feature state
   conditionalRules: ConditionalRule[]
   validationRules: ValidationRule[]
-  lockStatus: FormLock | null
+  lockStatus: LockStatus | null
   currentVersion: number
 
   // UI state

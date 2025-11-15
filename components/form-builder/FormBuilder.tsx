@@ -107,10 +107,10 @@ function FormBuilderInner() {
       }
 
       // Check if form is locked by another user
-      if (lockStatus?.is_locked && !lockStatus.locked_by_current_user) {
+      if (lockStatus?.is_locked && !lockStatus.can_edit) {
         toast({
           title: "Form Locked",
-          description: `This form is being edited by ${lockStatus.locked_by_user?.username || "another user"}`,
+          description: `This form is being edited by ${lockStatus.lock?.locked_by_username || "another user"}`,
           variant: "destructive",
         })
         return
