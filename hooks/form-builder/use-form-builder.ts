@@ -38,6 +38,14 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
   const [branding, setBranding] = useState<FormBranding>(initialForm?.schema?.branding || {})
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
 
+  // Track saved state for dirty checking
+  const [savedState, setSavedState] = useState({
+    title: initialForm?.title || "",
+    description: initialForm?.description || "",
+    fields: initialForm?.schema?.fields || [],
+    branding: initialForm?.schema?.branding || {},
+  })
+
   // Feature state
   const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>([])
   const [validationRules, setValidationRules] = useState<ValidationRule[]>([])
@@ -464,10 +472,23 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
    * Check if form is dirty (has unsaved changes)
    */
   const isDirty =
-    title !== initialForm?.title ||
-    description !== initialForm?.description ||
-    JSON.stringify(fields) !== JSON.stringify(initialForm?.schema?.fields || []) ||
-    JSON.stringify(branding) !== JSON.stringify(initialForm?.schema?.branding || {})
+    title !== savedState.title ||
+    description !== savedState.description ||
+    JSON.stringify(fields) !== JSON.stringify(savedState.fields) ||
+    JSON.stringify(branding) !== JSON.stringify(savedState.branding)
+
+  /**
+   * Mark current state as saved (reset dirty flag)
+   * Call this after successfully saving the form
+   */
+  const markAsSaved = useCallback(() => {
+    setSavedState({
+      title,
+      description,
+      fields: JSON.parse(JSON.stringify(fields)), // Deep clone to avoid reference issues
+      branding: JSON.parse(JSON.stringify(branding)),
+    })
+  }, [title, description, fields, branding])
 
   return {
     // Core state
@@ -524,6 +545,9 @@ export function useFormBuilder(options: UseFormBuilderOptions = {}) {
 
     // Validation
     validateFieldIds,
+
+    // Save operations
+    markAsSaved,
 
     // Metadata
     formId,
