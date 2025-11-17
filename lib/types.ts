@@ -80,7 +80,7 @@ export interface Form {
   title: string
   description?: string
   organization_id: string
-  status: "draft" | "published"
+  status: "draft" | "active" | "archived" | "decommissioned"
   version: number
   schema: {
     fields: FormField[]
@@ -200,7 +200,7 @@ export interface CreateFormInput {
     branding?: FormBranding
   }
   version: number
-  status: "draft" | "published"
+  status: "draft" | "active" | "archived" | "decommissioned"
 }
 
 export interface UpdateFormInput extends Partial<CreateFormInput> {}

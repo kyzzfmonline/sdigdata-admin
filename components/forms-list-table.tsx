@@ -114,7 +114,7 @@ export function FormsListTable() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => {
         const status = row.getValue("status") as string
-        return <Badge variant={status === "published" ? "success" : "warning"}>{status}</Badge>
+        return <Badge variant={status === "active" ? "success" : "warning"}>{status}</Badge>
       },
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id))
@@ -185,7 +185,7 @@ export function FormsListTable() {
                     Publish
                   </DropdownMenuItem>
                 )}
-                {form.status === "published" && hasPermission("forms:read") && (
+                {form.status === "active" && hasPermission("forms:read") && (
                   <DropdownMenuItem onClick={() => handleShare(form)}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Share Public Link
@@ -242,7 +242,9 @@ export function FormsListTable() {
             label: "Status",
             options: [
               { value: "draft", label: "Draft" },
-              { value: "published", label: "Published" },
+              { value: "active", label: "Active" },
+              { value: "archived", label: "Archived" },
+              { value: "decommissioned", label: "Decommissioned" },
             ],
           },
         ]}

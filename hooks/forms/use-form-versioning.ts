@@ -18,7 +18,7 @@ export interface FormVersion {
   fields: any[] // Form field schema
   branding?: any
   settings?: any
-  status: "draft" | "published" | "archived"
+  status: "draft" | "active" | "archived" | "decommissioned"
   created_by: string
   created_by_username?: string
   created_at: string

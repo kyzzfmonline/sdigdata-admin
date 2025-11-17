@@ -206,7 +206,7 @@ export const formSchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1, "Title is required").max(255, "Title must not exceed 255 characters"),
   organization_id: z.string().uuid(),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "active", "archived", "decommissioned"]),
   version: z.number().int().positive(),
   schema: z.object({
     fields: z.array(formFieldSchema).min(1, "Form must have at least one field"),
@@ -330,7 +330,7 @@ export const userQuerySchema = paginationSchema
 
 export const formQuerySchema = paginationSchema.merge(sortSchema).extend({
   organization_id: z.string().uuid().optional(),
-  status: z.enum(["draft", "published"]).optional(),
+  status: z.enum(["draft", "active", "archived", "decommissioned"]).optional(),
 })
 
 export const responseQuerySchema = paginationSchema.merge(sortSchema).extend({

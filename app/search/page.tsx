@@ -258,7 +258,8 @@ export default function AdvancedSearchPage() {
                             <SelectItem value="active">Active</SelectItem>
                             <SelectItem value="inactive">Inactive</SelectItem>
                             <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                            <SelectItem value="decommissioned">Decommissioned</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

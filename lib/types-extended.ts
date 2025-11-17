@@ -107,7 +107,7 @@ export interface FormTemplate {
 // Form Versioning Types
 //=============================================================================
 
-export type FormStatus = "draft" | "published" | "archived"
+export type FormStatus = "draft" | "active" | "archived" | "decommissioned"
 
 export type FormChangeType =
   | "field_added"

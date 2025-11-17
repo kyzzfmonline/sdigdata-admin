@@ -107,9 +107,7 @@ function FormBuilderInner() {
       }
 
       // Check if form is locked by another user
-      console.log("[LOCK DEBUG] Save attempt - lockStatus:", JSON.stringify(lockStatus, null, 2))
       if (lockStatus?.is_locked && !lockStatus.can_edit) {
-        console.log("[LOCK DEBUG] BLOCKING SAVE - is_locked:", lockStatus.is_locked, "can_edit:", lockStatus.can_edit)
         toast({
           title: "Form Locked",
           description: `This form is being edited by ${lockStatus.lock?.locked_by_username || "another user"}`,
@@ -117,7 +115,6 @@ function FormBuilderInner() {
         })
         return
       }
-      console.log("[LOCK DEBUG] Save allowed - proceeding")
 
       setIsSaving(true)
 
@@ -134,7 +131,7 @@ function FormBuilderInner() {
               fields: sanitizedFields,
               branding: branding || {},
             },
-            status: publish ? ("published" as const) : ("draft" as const),
+            status: publish ? ("active" as const) : ("draft" as const),
           }
 
           await formsAPI.update(formId, updateData)
@@ -149,7 +146,7 @@ function FormBuilderInner() {
               branding: branding || {},
             },
             version: 1,
-            status: publish ? ("published" as const) : ("draft" as const),
+            status: publish ? ("active" as const) : ("draft" as const),
           }
 
           const response = await formsAPI.create(createData)

@@ -73,10 +73,10 @@ export default function AgentDashboardPage() {
                     )}
                     <FileText className="w-8 h-8 text-primary" />
                   </div>
-                  {form.status === "published" && (
+                  {form.status === "active" && (
                     <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
                       <CheckCircle2 className="w-3 h-3" />
-                      Published
+                      Active
                     </span>
                   )}
                 </div>

@@ -383,14 +383,14 @@ export const templatesAPI = {
 
 // Responses endpoints
 export const responsesAPI = {
-  getAll: (params?: { form_id?: string }) => apiClient.get("/responses", { params }),
-  getById: (id: string) => apiClient.get(`/responses/${id}`),
-  create: (data: import("./types").CreateResponseInput) => apiClient.post("/responses", data),
-  delete: (id: string) => apiClient.delete(`/responses/${id}`),
-  cleanup: () => apiClient.delete("/responses/cleanup"),
+  getAll: (params?: { form_id?: string }) => apiClient.get("/v1/responses", { params }),
+  getById: (id: string) => apiClient.get(`/v1/responses/${id}`),
+  create: (data: import("./types").CreateResponseInput) => apiClient.post("/v1/responses", data),
+  delete: (id: string) => apiClient.delete(`/v1/responses/${id}`),
+  cleanup: () => apiClient.delete("/v1/responses/cleanup"),
   // New view modes
   getTableView: (params: { form_id: string; limit?: number; offset?: number }) =>
-    apiClient.get("/responses", {
+    apiClient.get("/v1/responses", {
       params: { ...params, view: "table" },
     }),
   getChartView: (params: {
@@ -399,7 +399,7 @@ export const responsesAPI = {
     aggregate?: "count" | "sum" | "avg" | "min" | "max"
     chart_type?: "bar" | "pie" | "line" | "scatter" | "histogram"
   }) =>
-    apiClient.get("/responses", {
+    apiClient.get("/v1/responses", {
       params: { ...params, view: "chart" },
     }),
   getTimeSeriesView: (params: {
@@ -408,15 +408,15 @@ export const responsesAPI = {
     time_granularity?: "hour" | "day" | "week" | "month" | "year"
     aggregate?: "count" | "sum" | "avg" | "min" | "max"
   }) =>
-    apiClient.get("/responses", {
+    apiClient.get("/v1/responses", {
       params: { ...params, view: "time_series" },
     }),
   getMapView: (params: { form_id: string; limit?: number; offset?: number }) =>
-    apiClient.get("/responses", {
+    apiClient.get("/v1/responses", {
       params: { ...params, view: "map" },
     }),
   getSummaryView: (params: { form_id: string }) =>
-    apiClient.get("/responses", {
+    apiClient.get("/v1/responses", {
       params: { ...params, view: "summary" },
     }),
 }
@@ -431,59 +431,59 @@ export const usersAPI = {
     limit?: number
     sort?: string
     order?: "asc" | "desc"
-  }) => apiClient.get("/users", { params }),
-  getMe: () => apiClient.get("/users/me"),
-  updateMe: (data: import("./types").UpdateUserInput) => apiClient.put("/users/me", data),
+  }) => apiClient.get("/v1/users", { params }),
+  getMe: () => apiClient.get("/v1/users/me"),
+  updateMe: (data: import("./types").UpdateUserInput) => apiClient.put("/v1/users/me", data),
   changePassword: (currentPassword: string, newPassword: string) =>
-    apiClient.post("/users/me/password", {
+    apiClient.post("/v1/users/me/password", {
       current_password: currentPassword,
       new_password: newPassword,
     }),
-  getNotifications: () => apiClient.get("/users/me/notifications"),
+  getNotifications: () => apiClient.get("/v1/users/me/notifications"),
   updateNotifications: (data: import("./types").UpdateNotificationPreferencesInput) =>
-    apiClient.put("/users/me/notifications", data),
-  getPreferences: () => apiClient.get("/users/me/preferences"),
+    apiClient.put("/v1/users/me/notifications", data),
+  getPreferences: () => apiClient.get("/v1/users/me/preferences"),
   updatePreferences: (data: import("./types").UpdatePreferencesInput) =>
-    apiClient.put("/users/me/preferences", data),
+    apiClient.put("/v1/users/me/preferences", data),
   // Roles and permissions
-  getRoles: () => apiClient.get("/users/roles"),
-  getPermissions: () => apiClient.get("/users/permissions"),
-  getUserRoles: (userId: string) => apiClient.get(`/users/${userId}/roles`),
-  getUserPermissions: (userId: string) => apiClient.get(`/users/${userId}/permissions`),
+  getRoles: () => apiClient.get("/v1/users/roles"),
+  getPermissions: () => apiClient.get("/v1/users/permissions"),
+  getUserRoles: (userId: string) => apiClient.get(`/v1/users/${userId}/roles`),
+  getUserPermissions: (userId: string) => apiClient.get(`/v1/users/${userId}/permissions`),
   assignRole: (userId: string, roleId: string) =>
-    apiClient.post(`/users/${userId}/roles/${roleId}`),
+    apiClient.post(`/v1/users/${userId}/roles/${roleId}`),
   removeRole: (userId: string, roleId: string) =>
-    apiClient.delete(`/users/${userId}/roles/${roleId}`),
-  delete: (id: string) => apiClient.delete(`/users/${id}`),
-  cleanup: () => apiClient.delete("/users/cleanup"),
+    apiClient.delete(`/v1/users/${userId}/roles/${roleId}`),
+  delete: (id: string) => apiClient.delete(`/v1/users/${id}`),
+  cleanup: () => apiClient.delete("/v1/users/cleanup"),
 }
 
 // Analytics endpoints
 export const analyticsAPI = {
   getDashboard: (period?: "24h" | "7d" | "30d" | "90d") =>
-    apiClient.get("/analytics/dashboard", { params: { period } }),
+    apiClient.get("/v1/analytics/dashboard", { params: { period } }),
   getPerformance: (period?: "24h" | "7d" | "30d" | "90d") =>
-    apiClient.get("/analytics/performance", { params: { period } }),
-  getFormAnalytics: (formId: string) => apiClient.get(`/analytics/forms/${formId}`),
+    apiClient.get("/v1/analytics/performance", { params: { period } }),
+  getFormAnalytics: (formId: string) => apiClient.get(`/v1/analytics/forms/${formId}`),
   getFormDetailedAnalytics: (formId: string) =>
-    apiClient.get(`/analytics/forms/${formId}/detailed`),
-  getAgentPerformance: (agentId: string) => apiClient.get(`/analytics/agents/${agentId}`),
+    apiClient.get(`/v1/analytics/forms/${formId}/detailed`),
+  getAgentPerformance: (agentId: string) => apiClient.get(`/v1/analytics/agents/${agentId}`),
 }
 
 // Notifications endpoints
 export const notificationsAPI = {
   getAll: (params?: { unread_only?: boolean; page?: number; limit?: number }) =>
-    apiClient.get("/notifications", { params }),
-  getRecent: () => apiClient.get("/notifications/recent"),
-  markAsRead: (id: string) => apiClient.put(`/notifications/${id}/read`),
-  markAllAsRead: () => apiClient.put("/notifications/read-all"),
-  delete: (id: string) => apiClient.delete(`/notifications/${id}`),
+    apiClient.get("/v1/notifications", { params }),
+  getRecent: () => apiClient.get("/v1/notifications/recent"),
+  markAsRead: (id: string) => apiClient.put(`/v1/notifications/${id}/read`),
+  markAllAsRead: () => apiClient.put("/v1/notifications/read-all"),
+  delete: (id: string) => apiClient.delete(`/v1/notifications/${id}`),
 }
 
 // Files endpoints for presigning URLs
 export const filesAPI = {
   presign: (filename: string, contentType: string, method: "GET" | "PUT" = "PUT") =>
-    apiClient.post("/files/presign", {
+    apiClient.post("/v1/files/presign", {
       filename,
       content_type: contentType,
       method,
@@ -498,57 +498,57 @@ export const exportAPI = {
     format: "csv" | "xlsx" | "json"
     include_metadata?: boolean
     anonymize?: boolean
-  }) => apiClient.post("/export/responses", data, { responseType: "blob" }),
+  }) => apiClient.post("/v1/export/responses", data, { responseType: "blob" }),
 }
 
 // System health endpoints
 export const healthAPI = {
-  getDashboard: () => apiClient.get("/health/dashboard"),
+  getDashboard: () => apiClient.get("/v1/health/dashboard"),
 }
 
 // Search endpoints
 export const searchAPI = {
   global: (params: { q: string; type?: "all" | "forms" | "responses" | "users"; limit?: number }) =>
-    apiClient.get("/search/global", { params }),
+    apiClient.get("/v1/search/global", { params }),
 }
 
 // RBAC endpoints
 export const rbacAPI = {
   // Roles
-  getRoles: () => apiClient.get("/rbac/roles"),
-  getRole: (id: string) => apiClient.get(`/rbac/roles/${id}`),
+  getRoles: () => apiClient.get("/v1/rbac/roles"),
+  getRole: (id: string) => apiClient.get(`/v1/rbac/roles/${id}`),
   createRole: (data: { name: string; description?: string; level?: number }) =>
-    apiClient.post("/rbac/roles", data),
+    apiClient.post("/v1/rbac/roles", data),
   updateRole: (id: string, data: { name?: string; description?: string; level?: number }) =>
-    apiClient.put(`/rbac/roles/${id}`, data),
-  deleteRole: (id: string) => apiClient.delete(`/rbac/roles/${id}`),
+    apiClient.put(`/v1/rbac/roles/${id}`, data),
+  deleteRole: (id: string) => apiClient.delete(`/v1/rbac/roles/${id}`),
 
   // Permissions
   getPermissions: (params?: { resource?: string; action?: string }) =>
-    apiClient.get("/rbac/permissions", { params }),
+    apiClient.get("/v1/rbac/permissions", { params }),
   createPermission: (data: {
     name: string
     resource: string
     action: string
     description?: string
-  }) => apiClient.post("/rbac/permissions", data),
-  deletePermission: (id: string) => apiClient.delete(`/rbac/permissions/${id}`),
+  }) => apiClient.post("/v1/rbac/permissions", data),
+  deletePermission: (id: string) => apiClient.delete(`/v1/rbac/permissions/${id}`),
 
   // Role-Permissions
-  getRolePermissions: (roleId: string) => apiClient.get(`/rbac/roles/${roleId}/permissions`),
+  getRolePermissions: (roleId: string) => apiClient.get(`/v1/rbac/roles/${roleId}/permissions`),
   assignPermissionsToRole: (roleId: string, data: { permission_ids: string[] }) =>
-    apiClient.post(`/rbac/roles/${roleId}/permissions`, data),
+    apiClient.post(`/v1/rbac/roles/${roleId}/permissions`, data),
   revokePermissionsFromRole: (roleId: string, data: { permission_ids: string[] }) =>
-    apiClient.delete(`/rbac/roles/${roleId}/permissions`, { data }),
+    apiClient.delete(`/v1/rbac/roles/${roleId}/permissions`, { data }),
 
   // User-Roles
-  getUserRoles: (userId: string) => apiClient.get(`/rbac/users/${userId}/roles`),
+  getUserRoles: (userId: string) => apiClient.get(`/v1/rbac/users/${userId}/roles`),
   assignRoleToUser: (userId: string, data: { role_id: string }) =>
-    apiClient.post(`/rbac/users/${userId}/roles`, data),
+    apiClient.post(`/v1/rbac/users/${userId}/roles`, data),
   revokeRoleFromUser: (userId: string, roleId: string) =>
-    apiClient.delete(`/rbac/users/${userId}/roles/${roleId}`),
-  getUserPermissions: (userId: string) => apiClient.get(`/rbac/users/${userId}/permissions`),
-  getRoleUsers: (roleId: string) => apiClient.get(`/rbac/roles/${roleId}/users`),
+    apiClient.delete(`/v1/rbac/users/${userId}/roles/${roleId}`),
+  getUserPermissions: (userId: string) => apiClient.get(`/v1/rbac/users/${userId}/permissions`),
+  getRoleUsers: (roleId: string) => apiClient.get(`/v1/rbac/roles/${roleId}/users`),
 }
 
 // Session Management endpoints
@@ -605,4 +605,19 @@ export const webhooksAPI = {
   deleteWebhook: (id: string) => apiClient.delete(`/v1/webhooks/${id}`),
   testWebhook: (id: string) => apiClient.post(`/v1/webhooks/${id}/test`),
   getWebhookLogs: (id: string) => apiClient.get(`/v1/webhooks/${id}/logs`),
+}
+
+// Public Forms endpoints (no authentication required)
+export const publicFormsAPI = {
+  // Get public form by ID
+  getForm: (formId: string) =>
+    axios.get(`${API_BASE_URL}/public/forms/${formId}`),
+
+  // Submit response to public form
+  submit: (formId: string, data: Record<string, any>) =>
+    axios.post(`${API_BASE_URL}/public/forms/${formId}/submit`, { data }),
+
+  // Check form availability/status
+  checkStatus: (formId: string) =>
+    axios.get(`${API_BASE_URL}/public/forms/${formId}/status`),
 }
