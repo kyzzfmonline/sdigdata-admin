@@ -53,13 +53,13 @@ export function MediaUploader({
 
       const { upload_url, file_url } = presignResponse.data.data || presignResponse.data
 
-      // Step 2: Upload file directly to MinIO/S3
+      // Step 2: Upload file directly to DigitalOcean Spaces/MinIO/S3
+      // IMPORTANT: For presigned URLs, we should NOT add headers unless they were
+      // included in the signature. DO Spaces will reject if headers don't match.
       const uploadResponse = await fetch(upload_url, {
         method: "PUT",
         body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
+        // No headers - presigned URL contains all necessary auth
       })
 
       if (!uploadResponse.ok) {

@@ -177,16 +177,18 @@ export function usePublishVersion(formId: string, version: number) {
 
   return useMutation({
     mutationFn: async (data?: PublishVersionRequest) => {
-      const response = await apiClient.post(`/forms/${formId}/versions/${version}/publish`, data)
+      // Use the correct publish endpoint (no version-specific endpoint exists)
+      // This sets form status to "active" (not "published")
+      const response = await apiClient.post(`/forms/${formId}/publish`, data)
       return response.data.data as FormVersion
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.forms.versions(formId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.forms.detail(formId) })
-      toast.success("Version published successfully")
+      toast.success("Form published successfully")
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to publish version")
+      toast.error(error.response?.data?.message || "Failed to publish form")
     },
   })
 }

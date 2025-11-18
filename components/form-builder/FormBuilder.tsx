@@ -231,7 +231,7 @@ function FormBuilderInner() {
           <div className="col-span-12 lg:col-span-3">
             {showBrandingEditor && (
               <div className="sticky top-24">
-                <Card className="p-4">
+                <Card className="p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold">Branding</h3>
                     <Button
