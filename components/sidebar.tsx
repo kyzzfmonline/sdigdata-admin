@@ -18,6 +18,7 @@ import {
   Key,
   Lock,
   LayoutGrid,
+  BookTemplate,
 } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { usePermissions } from "@/lib/permission-context"
@@ -47,7 +48,7 @@ const adminNavigation = [
   {
     name: "Templates",
     href: "/templates",
-    icon: LayoutGrid,
+    icon: BookTemplate,
     description: "Form Templates",
     badge: null,
     permission: null,

@@ -20,15 +20,50 @@ import {
   LockOpen,
   History,
   HelpCircle,
+  BookTemplate,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useFormBuilderContext } from "./FormBuilderProvider"
 import { Badge } from "@/components/ui/badge"
+import { useSaveAsTemplate } from "@/hooks/use-templates"
+import { useState } from "react"
 
 interface FormBuilderToolbarProps {
   onSave: (publish?: boolean) => Promise<void>
   isSaving: boolean
 }
+
+// Template categories - should match backend categories
+const TEMPLATE_CATEGORIES = [
+  "survey",
+  "registration",
+  "feedback",
+  "inspection",
+  "assessment",
+  "data_collection",
+  "application",
+  "report",
+  "other",
+] as const
 
 export function FormBuilderToolbar({ onSave, isSaving }: FormBuilderToolbarProps) {
   const {
@@ -47,7 +82,43 @@ export function FormBuilderToolbar({ onSave, isSaving }: FormBuilderToolbarProps
     formId,
   } = useFormBuilderContext()
 
+  const saveAsTemplate = useSaveAsTemplate()
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
+  const [templateData, setTemplateData] = useState({
+    name: "",
+    description: "",
+    category: "data_collection",
+    is_public: false,
+    tags: "",
+  })
+
   const canSave = title.trim() && fields.length > 0
+  const isExistingForm = formId && formId !== "new"
+
+  const handleSaveAsTemplate = async () => {
+    if (!isExistingForm) return
+
+    await saveAsTemplate.mutateAsync({
+      formId,
+      data: {
+        name: templateData.name,
+        description: templateData.description || undefined,
+        category: templateData.category,
+        is_public: templateData.is_public,
+        tags: templateData.tags ? templateData.tags.split(",").map((t) => t.trim()) : undefined,
+      },
+    })
+
+    setShowTemplateDialog(false)
+    // Reset form
+    setTemplateData({
+      name: "",
+      description: "",
+      category: "data_collection",
+      is_public: false,
+      tags: "",
+    })
+  }
 
   return (
     <div className="bg-card border-b border-border sticky top-0 z-10 shadow-sm">
@@ -186,6 +257,22 @@ export function FormBuilderToolbar({ onSave, isSaving }: FormBuilderToolbarProps
 
           {/* Right Section - Save/Publish */}
           <div className="flex items-center gap-2">
+            {/* Save as Template Button - Only for existing forms */}
+            {isExistingForm && (
+              <Button
+                onClick={() => setShowTemplateDialog(true)}
+                disabled={!canSave}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                aria-label="Save form as template"
+                title="Save this form as a reusable template"
+              >
+                <BookTemplate className="w-4 h-4" />
+                <span className="hidden lg:inline">Save as Template</span>
+              </Button>
+            )}
+
             <Button
               onClick={() => onSave(false)}
               disabled={!canSave || isSaving}
@@ -251,6 +338,119 @@ export function FormBuilderToolbar({ onSave, isSaving }: FormBuilderToolbarProps
           </div>
         )}
       </div>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>
+              Save this form as a reusable template. Templates can be used to quickly create new forms
+              with the same structure.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Template Name */}
+            <div className="space-y-2">
+              <Label htmlFor="template-name">
+                Template Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="template-name"
+                placeholder="e.g., Community Survey Template"
+                value={templateData.name}
+                onChange={(e) => setTemplateData({ ...templateData, name: e.target.value })}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="template-description">Description</Label>
+              <Textarea
+                id="template-description"
+                placeholder="Describe what this template is for..."
+                value={templateData.description}
+                onChange={(e) => setTemplateData({ ...templateData, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="template-category">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={templateData.category}
+                onValueChange={(value) => setTemplateData({ ...templateData, category: value })}
+              >
+                <SelectTrigger id="template-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEMPLATE_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category
+                        .split("_")
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(" ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <Label htmlFor="template-tags">Tags</Label>
+              <Input
+                id="template-tags"
+                placeholder="e.g., survey, feedback, public (comma-separated)"
+                value={templateData.tags}
+                onChange={(e) => setTemplateData({ ...templateData, tags: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Separate multiple tags with commas</p>
+            </div>
+
+            {/* Public Toggle */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="template-public"
+                checked={templateData.is_public}
+                onCheckedChange={(checked) =>
+                  setTemplateData({ ...templateData, is_public: checked as boolean })
+                }
+              />
+              <Label htmlFor="template-public" className="text-sm font-normal cursor-pointer">
+                Make this template public (visible to all users in your organization)
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveAsTemplate}
+              disabled={!templateData.name.trim() || saveAsTemplate.isPending}
+            >
+              {saveAsTemplate.isPending ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <BookTemplate className="w-4 h-4 mr-2" />
+                  Save Template
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

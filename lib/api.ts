@@ -379,6 +379,17 @@ export const templatesAPI = {
   delete: (id: string) => apiClient.delete(`/v1/form-templates/${id}`),
   useTemplate: (id: string, data: { title: string; organization_id: string }) =>
     apiClient.post(`/v1/form-templates/${id}/use`, data),
+  saveAsTemplate: (
+    formId: string,
+    data: {
+      name: string
+      description?: string
+      category: string
+      is_public?: boolean
+      tags?: string[]
+      thumbnail_url?: string
+    }
+  ) => apiClient.post(`/v1/form-templates/from-form/${formId}`, data),
 }
 
 // Responses endpoints
