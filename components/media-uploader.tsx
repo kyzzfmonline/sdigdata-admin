@@ -54,8 +54,13 @@ export function MediaUploader({
       const { upload_url, file_url } = presignResponse.data.data || presignResponse.data
 
       // Step 2: Upload file directly to DigitalOcean Spaces/MinIO/S3
-      // IMPORTANT: Content-Type MUST be included because it was signed in the presigned URL
-      // The Content-Type in the request must match what was used when generating the signature
+      // IMPORTANT: Content-Type MUST match what was signed in the presigned URL
+      // The file_url returned will be a presigned GET URL (valid for 24 hours)
+      // This keeps files private and secure - no public access needed
+      console.log('[MediaUploader] Uploading to:', upload_url)
+      console.log('[MediaUploader] File type:', file.type)
+      console.log('[MediaUploader] File size:', file.size)
+
       const uploadResponse = await fetch(upload_url, {
         method: "PUT",
         body: file,
@@ -64,8 +69,13 @@ export function MediaUploader({
         },
       })
 
+      console.log('[MediaUploader] Upload response status:', uploadResponse.status)
+      console.log('[MediaUploader] Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()))
+
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
+        const responseText = await uploadResponse.text()
+        console.error('[MediaUploader] Upload failed response:', responseText)
+        throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${responseText}`)
       }
 
       // Step 3: Success - set the file URL

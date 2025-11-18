@@ -65,6 +65,9 @@ interface FormBuilderContextValue {
   // Validation
   validateFieldIds: () => { isValid: boolean; duplicates: string[] }
 
+  // Save operations
+  markAsSaved: () => void
+
   // Metadata
   formId?: string
 }

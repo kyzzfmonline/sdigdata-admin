@@ -76,6 +76,7 @@ function FormBuilderInner() {
     moveFieldDown,
     undo,
     redo,
+    markAsSaved,
   } = useFormBuilderContext()
 
   const router = useRouter()
@@ -163,7 +164,8 @@ function FormBuilderInner() {
             : "Your changes have been saved as a draft",
         })
 
-        // Clear dirty state (handled by FormBuilderProvider)
+        // Clear dirty state by marking current state as saved
+        markAsSaved()
       } catch (error: any) {
         console.error("Failed to save form:", error)
         toast({
