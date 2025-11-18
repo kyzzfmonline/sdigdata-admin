@@ -154,7 +154,7 @@ function FormBuilderInner() {
           const savedForm = response.data.data
 
           // Redirect to edit page for new forms
-          router.push(`/forms/${savedForm.id}`)
+          router.push(`/forms/${savedForm.id}/edit`)
         }
 
         toast({
