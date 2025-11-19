@@ -138,9 +138,10 @@ export function BeautifulPublicForm({ form, onSubmit, isSubmitting = false }: Be
     await onSubmit(formData, attachments)
   }
 
-  const completionPercentage = Math.round(
-    (Object.keys(formData).length / fields.filter((f) => f.required).length) * 100
-  )
+  const requiredFieldsCount = fields.filter((f) => f.required).length
+  const completionPercentage = requiredFieldsCount > 0
+    ? Math.round((Object.keys(formData).length / requiredFieldsCount) * 100)
+    : 0
 
   return (
     <div
@@ -161,6 +162,9 @@ export function BeautifulPublicForm({ form, onSubmit, isSubmitting = false }: Be
                   src={branding.logo_url}
                   alt="Logo"
                   className="h-10 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none"
+                  }}
                 />
               )}
               <div>

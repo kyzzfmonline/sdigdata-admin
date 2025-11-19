@@ -363,7 +363,7 @@ export function FormFieldRenderer({
                 className={cn(
                   "w-8 h-8",
                   index < currentRating
-                    ? "fill-yellow-400 text-yellow-400"
+                    ? "fill-amber-500 text-amber-500"
                     : "fill-none text-muted-foreground"
                 )}
               />
