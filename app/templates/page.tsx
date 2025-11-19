@@ -7,7 +7,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import LayoutWrapper from "@/components/LayoutWrapper"
+import { LayoutWrapper } from "@/components/layout-wrapper"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -48,7 +48,7 @@ import {
   Calendar,
 } from "lucide-react"
 import { useTemplates, useDeleteTemplate, useCreateFromTemplate } from "@/hooks/use-templates"
-import { TableSkeleton } from "@/components/ui/table-skeleton"
+import { TableSkeleton } from "@/components/skeleton-loader"
 import { useStore } from "@/lib/store"
 import { toast } from "@/hooks/use-toast"
 
@@ -98,13 +98,13 @@ export default function TemplatesPage() {
     try {
       const result = await createFromTemplate.mutateAsync({
         templateId,
-        title: \`\${templateName} - \${new Date().toLocaleDateString()}\`,
+        title: `${templateName} - ${new Date().toLocaleDateString()}`,
         organizationId: currentUser?.organization_id,
       })
 
       // Navigate to the new form
       if (result?.form_id) {
-        router.push(\`/forms/\${result.form_id}\`)
+        router.push(`/forms/${result.form_id}`)
       }
     } catch (error) {
       // Error handled by mutation hook
@@ -243,7 +243,7 @@ export default function TemplatesPage() {
                             Create Form
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => router.push(\`/templates/\${template.id}\`)}
+                            onClick={() => router.push(`/templates/${template.id}`)}
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View Details

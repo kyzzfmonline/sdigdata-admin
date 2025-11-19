@@ -22,10 +22,22 @@ interface FieldOptionsEditorProps {
 export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps) {
   const options = field.options || []
   const [newOptionLabel, setNewOptionLabel] = useState("")
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const handleOptionChange = (index: number, key: "label" | "value", value: string) => {
     const newOptions = [...options]
-    newOptions[index] = { ...newOptions[index], [key]: value }
+    if (key === "label") {
+      // Auto-generate value from label
+      const autoValue = value
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "")
+      newOptions[index] = { ...newOptions[index], label: value, value: autoValue || `option_${index + 1}` }
+    } else {
+      // Manual value override (advanced mode)
+      newOptions[index] = { ...newOptions[index], [key]: value }
+    }
     onUpdate(field.id, { options: newOptions })
   }
 
@@ -98,17 +110,19 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
                   <Input
                     value={option.label}
                     onChange={(e) => handleOptionChange(index, "label", e.target.value)}
-                    placeholder="Option label"
+                    placeholder="Option label (e.g., Red, Blue, Green)"
                     className="text-sm"
                     aria-label={`Option ${index + 1} label`}
                   />
-                  <Input
-                    value={option.value}
-                    onChange={(e) => handleOptionChange(index, "value", e.target.value)}
-                    placeholder="Option value"
-                    className="text-xs font-mono bg-muted/50"
-                    aria-label={`Option ${index + 1} value`}
-                  />
+                  {showAdvanced && (
+                    <Input
+                      value={option.value}
+                      onChange={(e) => handleOptionChange(index, "value", e.target.value)}
+                      placeholder="Option value (auto-generated)"
+                      className="text-xs font-mono bg-muted/50"
+                      aria-label={`Option ${index + 1} value`}
+                    />
+                  )}
                 </div>
 
                 {/* Remove Button */}
@@ -229,16 +243,31 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
         </div>
       )}
 
-      {/* Validation Info */}
-      <div className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground">
+      {/* Advanced Toggle */}
+      <div className="flex items-center justify-between pt-2 border-t border-border">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-xs"
+        >
+          {showAdvanced ? "Hide" : "Show"} Advanced (Option Values)
+        </Button>
+      </div>
+
+      {/* Help Info */}
+      <div className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground space-y-1">
         <p>
-          <strong>Option value:</strong> The value stored in the database (must be unique)
+          <strong>Option label:</strong> The text displayed to users (e.g., "Red", "Blue")
         </p>
-        <p className="mt-1">
-          <strong>Option label:</strong> The text displayed to users
-        </p>
+        {showAdvanced && (
+          <p>
+            <strong>Option value:</strong> The value stored in the database (auto-generated from label)
+          </p>
+        )}
         {field.type === "checkbox" && (
-          <p className="mt-1">
+          <p>
             <strong>Checkbox:</strong> Users can select multiple options
           </p>
         )}
