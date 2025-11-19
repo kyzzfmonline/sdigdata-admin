@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { responsesAPI, formsAPI } from "@/lib/api"
 import { useQuery } from "@tanstack/react-query"
@@ -21,13 +22,11 @@ import { ColumnDef } from "@tanstack/react-table"
 import {
   Download,
   Eye,
-  BarChart3,
-  Map,
-  TrendingUp,
-  Table as TableIcon,
-  FileText,
   Trash2,
-  MoreHorizontal,
+  Copy,
+  Check,
+  FileIcon,
+  ExternalLink,
 } from "lucide-react"
 import {
   Select,
@@ -36,14 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,9 +54,7 @@ import {
 } from "@/components/ui/sheet"
 import { TableSkeleton } from "@/components/skeleton-loader"
 import { usePermissions } from "@/lib/permission-context"
-import { PermissionGuard } from "@/components/permission-guards"
-
-type ViewMode = "table" | "chart" | "time_series" | "map" | "summary"
+import { formatRelativeTime, formatFullDate, isImageUrl, isUrl } from "@/lib/date-utils"
 
 interface ResponsesTableProps {
   formId?: string
@@ -75,12 +64,9 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
   const [selectedFormId, setSelectedFormId] = useState(formId || "")
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null)
   const [isResponseSheetOpen, setIsResponseSheetOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>("table")
-  const [responseViewMode, setResponseViewMode] = useState<"data" | "chart" | "map" | "summary">(
-    "data"
-  )
   const [isExporting, setIsExporting] = useState(false)
   const [deleteResponseId, setDeleteResponseId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const { toast } = useToast()
   const deleteResponse = useDeleteResponse()
   const { hasPermission } = usePermissions()
@@ -130,81 +116,29 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
       return acc
     }, {}) || {}
 
-  // Fetch responses based on view mode
+  // Fetch responses
   const {
     data: responsesData,
     isLoading: responsesLoading,
     error: responsesError,
   } = useQuery({
-    queryKey: ["responses", selectedFormId, viewMode],
+    queryKey: ["responses", selectedFormId],
     queryFn: async () => {
       if (!selectedFormId) return null
 
       try {
-        switch (viewMode) {
-          case "table":
-            try {
-              const tableResponse = await responsesAPI.getTableView({
-                form_id: selectedFormId,
-                limit: 100,
-              })
-              return tableResponse.data?.data || tableResponse.data || []
-            } catch (error) {
-              console.warn("Table view API failed, falling back to basic responses:", error)
-              const fallbackResponse = await responsesAPI.getAll({
-                form_id: selectedFormId,
-              })
-              return { data: fallbackResponse.data?.data || [] }
-            }
-          case "chart":
-            try {
-              const chartResponse = await responsesAPI.getChartView({
-                form_id: selectedFormId,
-                group_by: "age",
-                aggregate: "count",
-              })
-              return chartResponse.data
-            } catch (error) {
-              console.warn("Chart view API failed:", error)
-              return { chart_data: [], group_by: "age", aggregate: "count" }
-            }
-          case "time_series":
-            try {
-              const timeSeriesResponse = await responsesAPI.getTimeSeriesView({
-                form_id: selectedFormId,
-                time_granularity: "day",
-              })
-              return timeSeriesResponse.data
-            } catch (error) {
-              console.warn("Time series view API failed:", error)
-              return { time_series: [], granularity: "day", date_field: "submitted_at" }
-            }
-          case "map":
-            try {
-              const mapResponse = await responsesAPI.getMapView({
-                form_id: selectedFormId,
-              })
-              return mapResponse.data
-            } catch (error) {
-              console.warn("Map view API failed:", error)
-              return { map_data: [], total_points: 0 }
-            }
-          case "summary":
-            try {
-              const summaryResponse = await responsesAPI.getSummaryView({
-                form_id: selectedFormId,
-              })
-              return summaryResponse.data
-            } catch (error) {
-              console.warn("Summary view API failed:", error)
-              return {
-                total_responses: 0,
-                date_range: null,
-                submission_types: {},
-              }
-            }
-          default:
-            return null
+        try {
+          const tableResponse = await responsesAPI.getTableView({
+            form_id: selectedFormId,
+            limit: 100,
+          })
+          return tableResponse.data?.data || tableResponse.data || []
+        } catch (error) {
+          console.warn("Table view API failed, falling back to basic responses:", error)
+          const fallbackResponse = await responsesAPI.getAll({
+            form_id: selectedFormId,
+          })
+          return { data: fallbackResponse.data?.data || [] }
         }
       } catch (error) {
         console.error("Failed to fetch responses:", error)
@@ -224,10 +158,6 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
     setSelectedFormId(value)
   }
 
-  const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode)
-  }
-
   const handleBulkDelete = (selectedResponses: FormResponse[]) => {
     if (
       confirm(
@@ -242,6 +172,7 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
 
   const handleRowDoubleClick = (response: FormResponse) => {
     setSelectedResponse(response)
+    setIsResponseSheetOpen(true)
   }
 
   const handleDelete = () => {
@@ -289,6 +220,30 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
     }
   }
 
+  const handleCopyId = (id: string) => {
+    navigator.clipboard.writeText(id)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+    toast({
+      title: "Copied",
+      description: "Response ID copied to clipboard",
+    })
+  }
+
+  const getQualityScoreBadge = (score?: number) => {
+    if (score === undefined || score === null) return null
+
+    let variant: "success" | "warning" | "destructive" = "success"
+    if (score < 60) variant = "destructive"
+    else if (score < 80) variant = "warning"
+
+    return (
+      <Badge variant={variant}>
+        {score.toFixed(0)}%
+      </Badge>
+    )
+  }
+
   const filteredForms = forms.filter((f: Form) => f.status === "active")
 
   // Check permissions
@@ -306,43 +261,78 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
     )
   }
 
-  // Helper functions to determine view mode availability
-  const isChartAvailable = () => {
-    // Enable chart view when we have any responses
-    return (
-      selectedFormId && responsesData && (!Array.isArray(responsesData) || responsesData.length > 0)
-    )
-  }
-
-  const isTimeSeriesAvailable = () => {
-    // Enable time series view if we have responses data
-    return responsesData && Array.isArray(responsesData) ? responsesData.length > 0 : true
-  }
-
-  const isMapAvailable = () => {
-    // Enable map view if we have responses data
-    return responsesData && Array.isArray(responsesData) ? responsesData.length > 0 : true
-  }
-
-  const isSummaryAvailable = () => {
-    // Enable summary view if we have responses data
-    return responsesData && Array.isArray(responsesData) ? responsesData.length > 0 : true
-  }
+  // Create a map of form IDs to titles for quick lookup
+  const formTitlesMap = forms.reduce((acc: Record<string, string>, form: Form) => {
+    acc[form.id] = form.title
+    return acc
+  }, {})
 
   const columns: ColumnDef<FormResponse>[] = [
+    {
+      accessorKey: "form_id",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Form Title" />,
+      cell: ({ row }) => {
+        const formId = row.getValue("form_id") as string
+        return <span className="font-medium">{formTitlesMap[formId] || "Unknown Form"}</span>
+      },
+    },
+    {
+      accessorKey: "id",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Response ID" />,
+      cell: ({ row }) => {
+        const id = row.getValue("id") as string
+        const shortId = id.slice(0, 8)
+        const isCopied = copiedId === id
+
+        return (
+          <div className="flex items-center gap-2">
+            <code className="text-xs bg-muted px-2 py-1 rounded">{shortId}</code>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCopyId(id)
+              }}
+            >
+              {isCopied ? (
+                <Check className="w-3 h-3 text-success" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </Button>
+          </div>
+        )
+      },
+    },
     {
       accessorKey: "submitted_by",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted By" />,
       cell: ({ row }) => {
-        return <span>{row.getValue("submitted_by") || "Anonymous"}</span>
+        const submittedBy = row.getValue("submitted_by") as string
+        return <span>{submittedBy || "Anonymous"}</span>
       },
     },
     {
       accessorKey: "submitted_at",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted At" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted" />,
       cell: ({ row }) => {
         const submittedAt = row.getValue("submitted_at") as string
-        return <span>{submittedAt ? new Date(submittedAt).toLocaleString() : "Unknown"}</span>
+        return (
+          <span className="text-muted-foreground">
+            {submittedAt ? formatRelativeTime(submittedAt) : "Unknown"}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: "quality_score",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Quality Score" />,
+      cell: ({ row }) => {
+        const response = row.original as any
+        const qualityScore = response.quality_score
+        return qualityScore !== undefined ? getQualityScoreBadge(qualityScore) : <span className="text-muted-foreground text-sm">N/A</span>
       },
     },
     {
@@ -365,32 +355,148 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
             >
               <Eye className="w-4 h-4" />
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {canDeleteResponses && (
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => setDeleteResponseId(response.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canDeleteResponses && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeleteResponseId(response.id)}
+                title="Delete Response"
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         )
       },
     },
   ]
+
+  const renderValue = (value: any, key: string): JSX.Element => {
+    // Handle null/undefined
+    if (value === null || value === undefined) {
+      return <span className="text-muted-foreground italic">No value</span>
+    }
+
+    // Handle booleans
+    if (typeof value === "boolean") {
+      return (
+        <Badge variant={value ? "success" : "secondary"}>
+          {value ? "Yes" : "No"}
+        </Badge>
+      )
+    }
+
+    // Handle strings
+    if (typeof value === "string") {
+      // Check if it's an image URL
+      if (isImageUrl(value)) {
+        return (
+          <div className="space-y-2">
+            <img
+              src={value}
+              alt="Response attachment"
+              className="max-h-[200px] rounded border"
+              onError={(e) => {
+                e.currentTarget.style.display = "none"
+                e.currentTarget.nextElementSibling?.classList.remove("hidden")
+              }}
+            />
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open in new tab
+            </a>
+          </div>
+        )
+      }
+
+      // Check if it's a file URL
+      if (isUrl(value)) {
+        return (
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline flex items-center gap-2"
+          >
+            <FileIcon className="w-4 h-4" />
+            <span className="break-all">{value}</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )
+      }
+
+      // Check if it's a date string (ISO format)
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        return (
+          <span className="text-foreground">
+            {formatRelativeTime(value)}
+            <span className="text-xs text-muted-foreground ml-2">
+              ({formatFullDate(value)})
+            </span>
+          </span>
+        )
+      }
+
+      // Regular string
+      return <span className="text-foreground">{value}</span>
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return (
+        <div className="space-y-1">
+          {value.map((item, index) => (
+            <div key={index} className="flex items-start gap-2">
+              <span className="text-muted-foreground">•</span>
+              {renderValue(item, `${key}.${index}`)}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Handle objects (including GPS coordinates)
+    if (typeof value === "object") {
+      // Check for GPS coordinates
+      if ("latitude" in value && "longitude" in value) {
+        return (
+          <div className="space-y-1">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Lat:</span> {value.latitude}
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Lng:</span> {value.longitude}
+            </div>
+            <a
+              href={`https://www.google.com/maps?q=${value.latitude},${value.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View on map
+            </a>
+          </div>
+        )
+      }
+
+      // Generic object - show as formatted JSON
+      return (
+        <pre className="text-xs bg-muted p-3 rounded mt-1 overflow-x-auto border">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      )
+    }
+
+    // Handle numbers
+    return <span className="text-foreground">{String(value)}</span>
+  }
 
   const renderTableView = () => {
     if (responsesError) {
@@ -440,38 +546,6 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
     )
   }
 
-  const renderChartView = () => {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Chart visualization coming soon...</p>
-      </div>
-    )
-  }
-
-  const renderTimeSeriesView = () => {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Time series visualization coming soon...</p>
-      </div>
-    )
-  }
-
-  const renderMapView = () => {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Map visualization coming soon...</p>
-      </div>
-    )
-  }
-
-  const renderSummaryView = () => {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Summary view coming soon...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -509,64 +583,14 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
         </div>
 
         {selectedFormId && (
-          <div>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-foreground mb-2">View Mode</label>
-              <Select
-                value={viewMode}
-                onValueChange={(value) => handleViewModeChange(value as ViewMode)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a view mode..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="table">
-                    <div className="flex items-center gap-2">
-                      <TableIcon className="w-4 h-4" />
-                      Table View
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="chart">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      Chart View
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="time_series">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      Time Series
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="map">
-                    <div className="flex items-center gap-2">
-                      <Map className="w-4 h-4" />
-                      Map View
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="summary">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Summary
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="mt-6">
-              {viewMode === "table" && renderTableView()}
-              {viewMode === "chart" && renderChartView()}
-              {viewMode === "time_series" && renderTimeSeriesView()}
-              {viewMode === "map" && renderMapView()}
-              {viewMode === "summary" && renderSummaryView()}
-            </div>
+          <div className="mt-6">
+            {responsesLoading ? <TableSkeleton /> : renderTableView()}
           </div>
         )}
       </Card>
 
       <Sheet open={isResponseSheetOpen} onOpenChange={setIsResponseSheetOpen}>
-        <SheetContent className="w-[800px] sm:w-[900px] max-w-[95vw]">
+        <SheetContent className="w-[800px] sm:w-[900px] max-w-[95vw] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Response Details</SheetTitle>
             <SheetDescription>
@@ -576,162 +600,70 @@ export function ResponsesTable({ formId }: ResponsesTableProps) {
 
           {selectedResponse && (
             <div className="space-y-6 mt-6">
-              <div className="bg-muted/30 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              {/* Header Section */}
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-muted-foreground">Form:</span>
-                    <span className="ml-2 font-medium">{formData?.title || "Unknown Form"}</span>
+                    <h3 className="font-semibold text-lg">
+                      {formData?.title || "Unknown Form"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Submitted {formatRelativeTime(selectedResponse.submitted_at)}
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Submitted:</span>
-                    <span className="ml-2 font-medium">
-                      {new Date(selectedResponse.submitted_at).toLocaleString()}
-                    </span>
-                  </div>
+                  {(selectedResponse as any).quality_score !== undefined && (
+                    <div>
+                      {getQualityScoreBadge((selectedResponse as any).quality_score)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Response ID:</span>
+                  <code className="text-xs bg-muted px-2 py-1 rounded">
+                    {selectedResponse.id.slice(0, 8)}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleCopyId(selectedResponse.id)}
+                  >
+                    {copiedId === selectedResponse.id ? (
+                      <Check className="w-3 h-3 text-success" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+
+                <div className="text-sm text-muted-foreground pt-2 border-t">
+                  <span className="font-medium">Full timestamp:</span>{" "}
+                  {formatFullDate(selectedResponse.submitted_at)}
                 </div>
               </div>
 
-              <div className="border-b">
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => setResponseViewMode("data")}
-                    className={`px-4 py-2 text-sm font-medium rounded-t-md ${
-                      responseViewMode === "data"
-                        ? "bg-background border-b-2 border-primary text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Data
-                  </button>
-                  <button
-                    onClick={() => setResponseViewMode("chart")}
-                    className={`px-4 py-2 text-sm font-medium rounded-t-md ${
-                      responseViewMode === "chart"
-                        ? "bg-background border-b-2 border-primary text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Chart
-                  </button>
-                  <button
-                    onClick={() => setResponseViewMode("map")}
-                    className={`px-4 py-2 text-sm font-medium rounded-t-md ${
-                      responseViewMode === "map"
-                        ? "bg-background border-b-2 border-primary text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Map
-                  </button>
-                  <button
-                    onClick={() => setResponseViewMode("summary")}
-                    className={`px-4 py-2 text-sm font-medium rounded-t-md ${
-                      responseViewMode === "summary"
-                        ? "bg-background border-b-2 border-primary text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Summary
-                  </button>
+              {/* Data Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Response Data</h3>
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                  {Object.entries(selectedResponse.data).map(([key, value]) => (
+                    <div key={key} className="border-l-4 border-primary/20 pl-4 py-2">
+                      <div className="font-medium text-foreground mb-2">
+                        {fieldLabels[key] || key}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {renderValue(value, key)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {Object.keys(selectedResponse.data).length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No data available for this response
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              <div className="min-h-[400px]">
-                {responseViewMode === "data" && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Answers</h3>
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                      {Object.entries(selectedResponse.data).map(([key, value]) => (
-                        <div key={key} className="border-l-4 border-primary/20 pl-4 py-2">
-                          <div className="font-medium text-foreground mb-1">
-                            {fieldLabels[key] || key}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {typeof value === "object" ? (
-                              <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
-                                {JSON.stringify(value, null, 2)}
-                              </pre>
-                            ) : (
-                              <span className="text-foreground">{String(value)}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {responseViewMode === "chart" && (
-                  <div className="text-center py-12">
-                    <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Response Chart</h3>
-                    <p className="text-muted-foreground">
-                      Chart visualization for this response coming soon...
-                    </p>
-                  </div>
-                )}
-
-                {responseViewMode === "map" && (
-                  <div className="text-center py-12">
-                    <Map className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Response Map</h3>
-                    <p className="text-muted-foreground">
-                      Map visualization for this response coming soon...
-                    </p>
-                  </div>
-                )}
-
-                {responseViewMode === "summary" && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Response Summary</h3>
-                    <div className="space-y-4">
-                      <div className="bg-muted/30 rounded-lg p-4">
-                        <h4 className="font-medium mb-2">Key Information</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total Fields:</span>
-                            <span className="font-medium">
-                              {Object.keys(selectedResponse.data).length}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Response ID:</span>
-                            <span className="font-mono text-xs">
-                              {selectedResponse.id.slice(-8)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Submitted:</span>
-                            <span className="font-medium">
-                              {new Date(selectedResponse.submitted_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-muted/30 rounded-lg p-4">
-                        <h4 className="font-medium mb-2">Field Highlights</h4>
-                        <div className="space-y-2">
-                          {Object.entries(selectedResponse.data)
-                            .slice(0, 3)
-                            .map(([key, value]) => (
-                              <div key={key} className="text-sm">
-                                <span className="text-muted-foreground">
-                                  {fieldLabels[key] || key}:
-                                </span>
-                                <span className="ml-2 font-medium">
-                                  {typeof value === "object"
-                                    ? "[Object]"
-                                    : String(value).slice(0, 50)}
-                                  {String(value).length > 50 && "..."}
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}

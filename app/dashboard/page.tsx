@@ -6,7 +6,6 @@ import { LayoutWrapper } from "@/components/layout-wrapper"
 import { PageHeader } from "@/components/page-header"
 import { StatCard as StandardizedStatCard, ContentCard } from "@/components/standardized-cards"
 import { useDashboardAnalytics } from "@/hooks/use-analytics"
-import { DevPermissionDebug } from "@/components/dev-permission-debug"
 import { PermissionDebugConsole } from "@/components/permission-debug-console"
 import {
   FileText,
@@ -160,11 +159,6 @@ export default function DashboardPage() {
             </>
           ) : (
             <>
-              {/* Developer Permission Debug Tool */}
-              <div className="mb-6">
-                <DevPermissionDebug />
-              </div>
-
               {/* Primary KPI Cards */}
               <motion.div
                 className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
