@@ -27,13 +27,8 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
   const handleOptionChange = (index: number, key: "label" | "value", value: string) => {
     const newOptions = [...options]
     if (key === "label") {
-      // Auto-generate value from label
-      const autoValue = value
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "")
-      newOptions[index] = { ...newOptions[index], label: value, value: autoValue || `option_${index + 1}` }
+      // Use label as value directly (no slugification)
+      newOptions[index] = { ...newOptions[index], label: value, value: value }
     } else {
       // Manual value override (advanced mode)
       newOptions[index] = { ...newOptions[index], [key]: value }
@@ -44,14 +39,9 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
   const handleAddOption = () => {
     const optionNumber = options.length + 1
     const label = newOptionLabel.trim() || `Option ${optionNumber}`
-    const value =
-      newOptionLabel
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "") || `option_${optionNumber}`
 
-    const newOptions = [...options, { label, value: value || `option_${optionNumber}` }]
+    // Use label as value directly (no slugification)
+    const newOptions = [...options, { label, value: label }]
     onUpdate(field.id, { options: newOptions })
     setNewOptionLabel("")
   }
@@ -181,8 +171,8 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
               onClick={() =>
                 onUpdate(field.id, {
                   options: [
-                    { label: "Yes", value: "yes" },
-                    { label: "No", value: "no" },
+                    { label: "Yes", value: "Yes" },
+                    { label: "No", value: "No" },
                   ],
                 })
               }
@@ -197,9 +187,9 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
               onClick={() =>
                 onUpdate(field.id, {
                   options: [
-                    { label: "Agree", value: "agree" },
-                    { label: "Neutral", value: "neutral" },
-                    { label: "Disagree", value: "disagree" },
+                    { label: "Agree", value: "Agree" },
+                    { label: "Neutral", value: "Neutral" },
+                    { label: "Disagree", value: "Disagree" },
                   ],
                 })
               }
@@ -214,10 +204,10 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
               onClick={() =>
                 onUpdate(field.id, {
                   options: [
-                    { label: "Male", value: "male" },
-                    { label: "Female", value: "female" },
-                    { label: "Other", value: "other" },
-                    { label: "Prefer not to say", value: "prefer_not_to_say" },
+                    { label: "Male", value: "Male" },
+                    { label: "Female", value: "Female" },
+                    { label: "Other", value: "Other" },
+                    { label: "Prefer not to say", value: "Prefer not to say" },
                   ],
                 })
               }
@@ -259,11 +249,11 @@ export function FieldOptionsEditor({ field, onUpdate }: FieldOptionsEditorProps)
       {/* Help Info */}
       <div className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground space-y-1">
         <p>
-          <strong>Option label:</strong> The text displayed to users (e.g., "Red", "Blue")
+          <strong>Option label:</strong> The text displayed to users and stored in responses (e.g., "Red", "Blue")
         </p>
         {showAdvanced && (
           <p>
-            <strong>Option value:</strong> The value stored in the database (auto-generated from label)
+            <strong>Option value:</strong> By default, the value is the same as the label. You can override this in advanced mode if needed.
           </p>
         )}
         {field.type === "checkbox" && (
