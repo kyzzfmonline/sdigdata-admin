@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { FormRenderer } from "@/components/form-renderer"
-import { formsAPI, responsesAPI } from "@/lib/api"
+import { BeautifulPublicForm, SuccessPage } from "@/components/public-forms/beautiful-public-form"
 import { useToast } from "@/hooks/use-toast"
 import type { Form, FormResponseData } from "@/lib/types"
-import { Loader, CheckCircle2 } from "lucide-react"
+import { Loader } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { logger } from "@/lib/logger"
@@ -151,31 +150,19 @@ export default function PublicFormPage() {
 
   if (submitted) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <Card className="p-12 text-center max-w-md">
-          <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">Response Submitted!</h2>
-          <p className="text-muted-foreground mb-6">Your response has been recorded successfully.</p>
-          <Button onClick={() => window.location.reload()}>Submit Another Response</Button>
-        </Card>
-      </div>
+      <SuccessPage
+        formTitle={form.title}
+        branding={form.schema?.branding}
+        onNewResponse={() => window.location.reload()}
+      />
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <FormRenderer
-          formId={form.id}
-          formTitle={form.title}
-          description={form.description}
-          fields={form.schema?.fields || []}
-          branding={form.schema?.branding}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          isPublic={true}
-        />
-      </div>
-    </div>
+    <BeautifulPublicForm
+      form={form}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
   )
 }
