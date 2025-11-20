@@ -67,7 +67,7 @@ export default function PublicFormPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/forms/${form.id}/submit`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/forms/${form.id}/responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
