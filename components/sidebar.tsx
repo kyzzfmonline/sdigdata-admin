@@ -19,6 +19,9 @@ import {
   Lock,
   LayoutGrid,
   BookTemplate,
+  Vote,
+  Flag,
+  User,
 } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { usePermissions } from "@/lib/permission-context"
@@ -52,6 +55,30 @@ const adminNavigation = [
     description: "Form Templates",
     badge: null,
     permission: null,
+  },
+  {
+    name: "Elections",
+    href: "/elections",
+    icon: Vote,
+    description: "Polls & Elections",
+    badge: null,
+    permission: "elections:read",
+  },
+  {
+    name: "Parties",
+    href: "/parties",
+    icon: Flag,
+    description: "Political Parties",
+    badge: null,
+    permission: "elections:read",
+  },
+  {
+    name: "Candidates",
+    href: "/candidates",
+    icon: User,
+    description: "Candidate Profiles",
+    badge: null,
+    permission: "elections:read",
   },
   {
     name: "Responses",
@@ -167,6 +194,11 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
     (item) => !item.permission || hasPermission(item.permission)
   )
 
+  // Filter admin nav items based on permissions
+  const filteredAdminNav = adminNavigation.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  )
+
   // Build navigation sections
   type NavItem = {
     name: string
@@ -178,15 +210,24 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
   }
   type NavSection = { title?: string; items: NavItem[] }
 
+  // Separate filtered admin nav into sections
+  const overviewItems = filteredAdminNav.filter((item) => item.href === "/dashboard")
+  const contentItems = filteredAdminNav.filter((item) =>
+    ["/forms", "/templates", "/elections", "/parties", "/candidates", "/responses"].includes(item.href)
+  )
+  const userItems = filteredAdminNav.filter((item) => item.href === "/users")
+  const analyticsItems = filteredAdminNav.filter((item) => item.href === "/analytics")
+
   const navigationSections: NavSection[] = isAgent
     ? [
         { title: "My Work", items: agentNavigation.slice(0, 2) },
         { title: "Settings", items: agentNavigation.slice(2) },
       ]
     : [
-        { title: "Overview", items: adminNavigation.slice(0, 1) },
-        { title: "Content Management", items: adminNavigation.slice(1, 4) },
-        { title: "Analytics", items: adminNavigation.slice(4, 5) },
+        ...(overviewItems.length > 0 ? [{ title: "Overview", items: overviewItems }] : []),
+        ...(contentItems.length > 0 ? [{ title: "Content Management", items: contentItems }] : []),
+        ...(userItems.length > 0 ? [{ title: "User Management", items: userItems }] : []),
+        ...(analyticsItems.length > 0 ? [{ title: "Analytics", items: analyticsItems }] : []),
         ...(filteredRbacNav.length > 0
           ? [{ title: "Access Control", items: filteredRbacNav }]
           : []),

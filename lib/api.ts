@@ -632,3 +632,329 @@ export const publicFormsAPI = {
   checkStatus: (formId: string) =>
     axios.get(`${API_BASE_URL}/public/forms/${formId}/status`),
 }
+
+// ============================================
+// ELECTIONS & VOTING API
+// ============================================
+
+// Elections endpoints
+export const electionsAPI = {
+  // List elections
+  getAll: (params?: {
+    organization_id?: string
+    status?: string
+    election_type?: string
+    page?: number
+    limit?: number
+  }) => apiClient.get("/v1/elections", { params }),
+
+  // Get single election with positions/candidates/options
+  getById: (id: string) => apiClient.get(`/v1/elections/${id}`),
+
+  // Create election
+  create: (data: import("./types").CreateElectionInput) =>
+    apiClient.post("/v1/elections", data),
+
+  // Update election
+  update: (id: string, data: import("./types").UpdateElectionInput) =>
+    apiClient.put(`/v1/elections/${id}`, data),
+
+  // Delete election (soft delete)
+  delete: (id: string) => apiClient.delete(`/v1/elections/${id}`),
+
+  // Lifecycle management
+  publish: (id: string) => apiClient.post(`/v1/elections/${id}/publish`),
+  pause: (id: string) => apiClient.post(`/v1/elections/${id}/pause`),
+  resume: (id: string) => apiClient.post(`/v1/elections/${id}/resume`),
+  close: (id: string) => apiClient.post(`/v1/elections/${id}/close`),
+  cancel: (id: string) => apiClient.post(`/v1/elections/${id}/cancel`),
+
+  // Audit log
+  getAuditLog: (id: string, params?: { page?: number; limit?: number }) =>
+    apiClient.get(`/v1/elections/${id}/audit-log`, { params }),
+
+  // ========== POSITIONS ==========
+  // List positions for an election
+  getPositions: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/positions`),
+
+  // Create position
+  createPosition: (electionId: string, data: import("./types").CreatePositionInput) =>
+    apiClient.post(`/v1/elections/${electionId}/positions`, data),
+
+  // Update position
+  updatePosition: (
+    electionId: string,
+    positionId: string,
+    data: import("./types").UpdatePositionInput
+  ) => apiClient.put(`/v1/elections/${electionId}/positions/${positionId}`, data),
+
+  // Delete position
+  deletePosition: (electionId: string, positionId: string) =>
+    apiClient.delete(`/v1/elections/${electionId}/positions/${positionId}`),
+
+  // ========== CANDIDATES ==========
+  // List candidates for a position
+  getCandidates: (electionId: string, positionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/positions/${positionId}/candidates`),
+
+  // Create candidate
+  createCandidate: (
+    electionId: string,
+    positionId: string,
+    data: import("./types").CreateCandidateInput
+  ) => apiClient.post(`/v1/elections/${electionId}/positions/${positionId}/candidates`, data),
+
+  // Update candidate
+  updateCandidate: (
+    electionId: string,
+    positionId: string,
+    candidateId: string,
+    data: import("./types").UpdateCandidateInput
+  ) =>
+    apiClient.put(
+      `/v1/elections/${electionId}/positions/${positionId}/candidates/${candidateId}`,
+      data
+    ),
+
+  // Delete candidate
+  deleteCandidate: (electionId: string, positionId: string, candidateId: string) =>
+    apiClient.delete(
+      `/v1/elections/${electionId}/positions/${positionId}/candidates/${candidateId}`
+    ),
+
+  // ========== POLL OPTIONS ==========
+  // List poll options for an election (for polls/surveys)
+  getPollOptions: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/options`),
+
+  // Create poll option
+  createPollOption: (electionId: string, data: import("./types").CreatePollOptionInput) =>
+    apiClient.post(`/v1/elections/${electionId}/options`, data),
+
+  // Update poll option
+  updatePollOption: (
+    electionId: string,
+    optionId: string,
+    data: import("./types").UpdatePollOptionInput
+  ) => apiClient.put(`/v1/elections/${electionId}/options/${optionId}`, data),
+
+  // Delete poll option
+  deletePollOption: (electionId: string, optionId: string) =>
+    apiClient.delete(`/v1/elections/${electionId}/options/${optionId}`),
+}
+
+// Voting endpoints (authenticated)
+export const votingAPI = {
+  // Verify voter eligibility and get voter status
+  verifyVoter: (
+    electionId: string,
+    data?: { national_id?: string; phone?: string; otp?: string }
+  ) => apiClient.post(`/v1/elections/${electionId}/verify`, data),
+
+  // Cast votes
+  castVotes: (electionId: string, data: import("./types").CastVotesInput) =>
+    apiClient.post(`/v1/elections/${electionId}/vote`, data),
+
+  // Check if user has already voted
+  getVoteStatus: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/vote-status`),
+}
+
+// Election Analytics endpoints
+export const electionAnalyticsAPI = {
+  // Get live results
+  getResults: (electionId: string, positionId?: string) =>
+    apiClient.get(`/v1/elections/${electionId}/results`, {
+      params: positionId ? { position_id: positionId } : undefined,
+    }),
+
+  // Get finalized results
+  getFinalizedResults: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/results/final`),
+
+  // Finalize and cache results (admin only)
+  finalizeResults: (electionId: string) =>
+    apiClient.post(`/v1/elections/${electionId}/results/finalize`),
+
+  // Get comprehensive analytics
+  getAnalytics: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics`),
+
+  // Get demographic breakdown
+  getDemographics: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/demographics`),
+
+  // Get regional results
+  getRegionalResults: (electionId: string, positionId?: string) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/regional`, {
+      params: positionId ? { position_id: positionId } : undefined,
+    }),
+
+  // Get voting trends
+  getTrends: (electionId: string, granularity: "minute" | "hour" | "day" = "hour") =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/trends`, {
+      params: { granularity },
+    }),
+
+  // Get turnout statistics
+  getTurnout: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/turnout`),
+
+  // Get predictions (active elections only)
+  getPredictions: (electionId: string) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/predictions`),
+
+  // Compare candidates
+  compareCandidates: (electionId: string, candidateIds: string[]) =>
+    apiClient.get(`/v1/elections/${electionId}/analytics/comparison`, {
+      params: { candidate_ids: candidateIds.join(",") },
+    }),
+
+  // Dashboard - overview of all elections
+  getDashboard: () => apiClient.get("/v1/elections/dashboard"),
+
+  // Dashboard - active elections only
+  getActiveDashboard: () => apiClient.get("/v1/elections/dashboard/active"),
+
+  // Export election data
+  exportData: (electionId: string, format: "json" | "csv" = "json") =>
+    apiClient.get(`/v1/elections/${electionId}/export`, {
+      params: { format },
+      responseType: format === "csv" ? "blob" : "json",
+    }),
+}
+
+// ============================================
+// POLITICAL PARTIES API
+// ============================================
+
+export const politicalPartiesAPI = {
+  // List parties
+  getAll: (params?: {
+    status?: string
+    search?: string
+    limit?: number
+    offset?: number
+  }) => apiClient.get("/v1/political-parties", { params }),
+
+  // Get single party
+  getById: (id: string) => apiClient.get(`/v1/political-parties/${id}`),
+
+  // Create party
+  create: (data: import("./types").CreatePartyInput) =>
+    apiClient.post("/v1/political-parties", data),
+
+  // Update party
+  update: (id: string, data: import("./types").UpdatePartyInput) =>
+    apiClient.put(`/v1/political-parties/${id}`, data),
+
+  // Delete party (soft delete)
+  delete: (id: string) => apiClient.delete(`/v1/political-parties/${id}`),
+
+  // Get party candidates
+  getCandidates: (
+    partyId: string,
+    params?: { status?: string; limit?: number; offset?: number }
+  ) => apiClient.get(`/v1/political-parties/${partyId}/candidates`, { params }),
+
+  // Get party stats
+  getStats: (partyId: string) =>
+    apiClient.get(`/v1/political-parties/${partyId}/stats`),
+
+  // Get party election history
+  getElectionHistory: (partyId: string) =>
+    apiClient.get(`/v1/political-parties/${partyId}/elections`),
+
+  // Get leaderboard
+  getLeaderboard: (params?: {
+    sort_by?: "total_wins" | "total_candidates" | "elections"
+    limit?: number
+  }) => apiClient.get("/v1/political-parties/leaderboard", { params }),
+}
+
+// ============================================
+// CANDIDATE PROFILES API
+// ============================================
+
+export const candidateProfilesAPI = {
+  // List candidate profiles
+  getAll: (params?: {
+    party?: string
+    status?: string
+    search?: string
+    limit?: number
+    offset?: number
+  }) => apiClient.get("/v1/candidate-profiles", { params }),
+
+  // Get single candidate profile
+  getById: (id: string) => apiClient.get(`/v1/candidate-profiles/${id}`),
+
+  // Create candidate profile
+  create: (data: import("./types").CreateCandidateProfileInput) =>
+    apiClient.post("/v1/candidate-profiles", data),
+
+  // Update candidate profile
+  update: (id: string, data: import("./types").UpdateCandidateProfileInput) =>
+    apiClient.put(`/v1/candidate-profiles/${id}`, data),
+
+  // Delete candidate profile (soft delete)
+  delete: (id: string) => apiClient.delete(`/v1/candidate-profiles/${id}`),
+
+  // Get candidate stats
+  getStats: (id: string) => apiClient.get(`/v1/candidate-profiles/${id}/stats`),
+
+  // Get leaderboard
+  getLeaderboard: (params?: {
+    sort_by?: "total_wins" | "total_votes" | "win_rate" | "elections_count"
+    limit?: number
+  }) => apiClient.get("/v1/candidate-profiles/leaderboard", { params }),
+
+  // Assign candidate to election position
+  assign: (data: import("./types").AssignCandidateInput) =>
+    apiClient.post("/v1/candidate-profiles/assign", data),
+
+  // Remove candidate from election
+  removeAssignment: (assignmentId: string) =>
+    apiClient.delete(`/v1/candidate-profiles/assign/${assignmentId}`),
+
+  // Update candidacy status
+  updateCandidacyStatus: (
+    assignmentId: string,
+    status: import("./types").CandidacyStatus
+  ) =>
+    apiClient.put(`/v1/candidate-profiles/assign/${assignmentId}/status`, null, {
+      params: { new_status: status },
+    }),
+}
+
+// Public Elections endpoints (no authentication required for anonymous voting)
+export const publicElectionsAPI = {
+  // Get public election info
+  getElection: (electionId: string) =>
+    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}`),
+
+  // Get election results (if visibility allows)
+  getResults: (electionId: string) =>
+    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}/results`),
+
+  // Request OTP for phone verification
+  requestOTP: (electionId: string, data: { phone: string }) =>
+    axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/request-otp`, data),
+
+  // Verify voter (anonymous flow)
+  verifyVoter: (
+    electionId: string,
+    data: { national_id?: string; phone?: string; otp?: string }
+  ) => axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/verify`, data),
+
+  // Cast anonymous vote
+  castVote: (electionId: string, data: import("./types").CastVotesInput) =>
+    axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/vote`, data),
+
+  // Check vote status with voter token
+  checkVoteStatus: (electionId: string, voterToken: string) =>
+    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}/vote-status`, {
+      params: { voter_token: voterToken },
+    }),
+}

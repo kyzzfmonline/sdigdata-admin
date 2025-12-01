@@ -385,3 +385,609 @@ export interface CreateWebhookInput {
   events: string[]
   enabled?: boolean
 }
+
+// ============================================
+// ELECTIONS & VOTING TYPES
+// ============================================
+
+export type ElectionType = "election" | "poll" | "survey" | "referendum"
+export type VotingMethod = "single_choice" | "multi_choice" | "ranked_choice"
+export type VerificationLevel = "anonymous" | "registered" | "verified"
+export type ResultsVisibility = "real_time" | "after_close"
+export type ElectionStatus =
+  | "draft"
+  | "scheduled"
+  | "active"
+  | "paused"
+  | "closed"
+  | "cancelled"
+
+export interface ElectionBranding {
+  logo_url?: string
+  primary_color?: string
+  header_text?: string
+  footer_text?: string
+}
+
+export interface ElectionSettings {
+  allow_write_in?: boolean
+  randomize_candidates?: boolean
+  show_party_affiliation?: boolean
+  [key: string]: any
+}
+
+export interface Election {
+  id: string
+  organization_id: string
+  organization_name?: string
+  title: string
+  description?: string
+  election_type: ElectionType
+  voting_method: VotingMethod
+  verification_level: VerificationLevel
+  require_national_id: boolean
+  require_phone_otp: boolean
+  results_visibility: ResultsVisibility
+  show_voter_count: boolean
+  start_date: string
+  end_date: string
+  status: ElectionStatus
+  linked_form_id?: string
+  settings: ElectionSettings
+  branding: ElectionBranding
+  created_by: string
+  created_at: string
+  updated_at?: string
+  deleted: boolean
+  // Nested data from detail endpoint
+  positions?: ElectionPosition[]
+  poll_options?: PollOption[]
+}
+
+export interface ElectionPosition {
+  id: string
+  election_id: string
+  title: string
+  description?: string
+  max_selections: number
+  display_order: number
+  created_at: string
+  candidates?: Candidate[]
+}
+
+export interface CandidatePolicies {
+  [key: string]: string
+}
+
+export interface CandidateExperience {
+  title?: string
+  organization?: string
+  years?: number
+  description?: string
+  [key: string]: any
+}
+
+export interface Candidate {
+  id: string
+  position_id: string
+  position_title?: string
+  election_id?: string
+  name: string
+  photo_url?: string
+  party?: string
+  bio?: string
+  manifesto?: string
+  policies: CandidatePolicies
+  experience: CandidateExperience
+  endorsements: string[]
+  display_order: number
+  created_at: string
+  updated_at?: string
+}
+
+export interface PollOption {
+  id: string
+  election_id: string
+  option_text: string
+  description?: string
+  display_order: number
+  created_at: string
+}
+
+// Election Input Types
+export interface CreateElectionInput {
+  title: string
+  description?: string
+  election_type: ElectionType
+  voting_method: VotingMethod
+  verification_level?: VerificationLevel
+  require_national_id?: boolean
+  require_phone_otp?: boolean
+  results_visibility?: ResultsVisibility
+  show_voter_count?: boolean
+  start_date: string
+  end_date: string
+  linked_form_id?: string
+  settings?: ElectionSettings
+  branding?: ElectionBranding
+}
+
+export interface UpdateElectionInput extends Partial<CreateElectionInput> {
+  status?: ElectionStatus
+}
+
+export interface CreatePositionInput {
+  title: string
+  description?: string
+  max_selections?: number
+  display_order?: number
+}
+
+export interface UpdatePositionInput extends Partial<CreatePositionInput> {}
+
+export interface CreateCandidateInput {
+  name: string
+  photo_url?: string
+  party?: string
+  bio?: string
+  manifesto?: string
+  policies?: CandidatePolicies
+  experience?: CandidateExperience
+  endorsements?: string[]
+  display_order?: number
+}
+
+export interface UpdateCandidateInput extends Partial<CreateCandidateInput> {}
+
+export interface CreatePollOptionInput {
+  option_text: string
+  description?: string
+  display_order?: number
+}
+
+export interface UpdatePollOptionInput extends Partial<CreatePollOptionInput> {}
+
+// Voting Types
+export interface VoteSelection {
+  position_id?: string
+  candidate_id?: string
+  poll_option_id?: string
+  rank?: number
+}
+
+export interface CastVotesInput {
+  votes: VoteSelection[]
+  voter_token?: string
+}
+
+export interface VoteReceipt {
+  election_id: string
+  election_title: string
+  election_type: ElectionType
+  voter_hash: string
+  votes_cast: number
+  voted_at: string
+  confirmation_code: string
+}
+
+// Election Results Types
+export interface CandidateResult {
+  candidate_id: string
+  name: string
+  party?: string
+  photo_url?: string
+  votes: number
+  percentage: number
+  rank: number
+  rounds?: RankedChoiceRound[]
+}
+
+export interface RankedChoiceRound {
+  round: number
+  candidates: {
+    candidate_id: string
+    name: string
+    votes: number
+    percentage: number
+  }[]
+}
+
+export interface PositionResult {
+  position_id: string
+  title: string
+  max_selections: number
+  total_votes: number
+  candidates: CandidateResult[]
+}
+
+export interface PollOptionResult {
+  option_id: string
+  option_text: string
+  description?: string
+  votes: number
+  percentage: number
+  rank: number
+}
+
+export interface ElectionResults {
+  election_id: string
+  election_title: string
+  election_type: ElectionType
+  voting_method: VotingMethod
+  status: ElectionStatus
+  total_voters: number
+  results_hidden?: boolean
+  message?: string
+  positions?: PositionResult[]
+  options?: PollOptionResult[]
+  finalized?: boolean
+  finalized_by?: string
+}
+
+// Election Analytics Types
+export interface DemographicBreakdown {
+  election_id: string
+  by_region: { region: string; votes: number }[]
+  by_age_group: { age_group: string; votes: number }[]
+  by_hour: { hour: string; votes: number }[]
+}
+
+export interface VotingTrend {
+  period: string
+  votes: number
+  unique_voters: number
+  cumulative_votes: number
+}
+
+export interface VotingTrends {
+  election_id: string
+  granularity: "minute" | "hour" | "day"
+  trend: VotingTrend[]
+}
+
+export interface TurnoutStats {
+  election_id: string
+  registered_voters: number
+  votes_cast: number
+  unique_voters: number
+  turnout_rate: number
+  by_region: {
+    region: string
+    registered: number
+    voted: number
+    turnout_rate: number
+  }[]
+}
+
+export interface ElectionPredictions {
+  election_id: string
+  time_progress: number
+  current_votes: number
+  voting_velocity: number
+  projected_total_votes: number
+  remaining_hours: number
+  confidence: "low" | "medium" | "high"
+  projected_winners?: {
+    position_id: string
+    position_title: string
+    projected_winner: string
+    current_lead: number
+  }[]
+}
+
+export interface CandidateComparison {
+  candidate_id: string
+  name: string
+  party?: string
+  position: string
+  bio?: string
+  policies: CandidatePolicies
+  experience: CandidateExperience
+  endorsements: string[]
+  vote_stats: {
+    total_votes: number
+    regions_present: number
+  }
+  top_regions: { region: string; votes: number }[]
+}
+
+export interface ElectionAnalytics {
+  election: {
+    id: string
+    title: string
+    type: ElectionType
+    status: ElectionStatus
+    voting_method: VotingMethod
+  }
+  results: ElectionResults
+  demographics: DemographicBreakdown
+  trends: VotingTrends
+  turnout: TurnoutStats
+}
+
+export interface ElectionsDashboard {
+  status_summary: Record<ElectionStatus, number>
+  active_elections: {
+    id: string
+    title: string
+    type: ElectionType
+    end_date: string
+    votes: number
+  }[]
+  upcoming_elections: {
+    id: string
+    title: string
+    type: ElectionType
+    start_date: string
+  }[]
+  recent_closed: {
+    id: string
+    title: string
+    end_date: string
+    total_votes: number
+  }[]
+}
+
+export interface ElectionAuditLog {
+  id: string
+  election_id: string
+  action: string
+  actor_id?: string
+  actor_name?: string
+  details?: Record<string, any>
+  ip_address?: string
+  created_at: string
+}
+
+// ============================================
+// POLITICAL PARTIES
+// ============================================
+
+export type PartyStatus = "active" | "inactive" | "suspended" | "dissolved"
+
+export interface PoliticalParty {
+  id: string
+  organization_id: string
+  name: string
+  abbreviation?: string
+  slogan?: string
+  description?: string
+  logo_url?: string
+  color_primary?: string
+  color_secondary?: string
+  headquarters_address?: string
+  website?: string
+  email?: string
+  phone?: string
+  social_links?: Record<string, string>
+  leader_name?: string
+  founded_date?: string
+  registration_number?: string
+  total_candidates: number
+  total_elections_participated: number
+  total_wins: number
+  status: PartyStatus
+  created_at: string
+  updated_at: string
+  election_history?: PartyElectionHistory[]
+}
+
+export interface PartyElectionHistory {
+  party_id: string
+  party_name: string
+  abbreviation?: string
+  election_id: string
+  election_title: string
+  election_type: ElectionType
+  election_date: string
+  candidates_fielded: number
+  seats_won: number
+  total_votes: number
+  avg_vote_percentage: number
+}
+
+export interface CreatePartyInput {
+  name: string
+  abbreviation?: string
+  slogan?: string
+  description?: string
+  logo_url?: string
+  color_primary?: string
+  color_secondary?: string
+  headquarters_address?: string
+  website?: string
+  email?: string
+  phone?: string
+  social_links?: Record<string, string>
+  leader_name?: string
+  founded_date?: string
+  registration_number?: string
+}
+
+export interface UpdatePartyInput extends Partial<CreatePartyInput> {
+  status?: PartyStatus
+}
+
+export interface PartyStats {
+  party: PoliticalParty
+  candidates: {
+    total: number
+    active: number
+  }
+  elections: {
+    total_participations: number
+    total_wins: number
+    total_votes_received: number
+  }
+  by_election_type: Record<
+    string,
+    {
+      elections: number
+      candidates: number
+      wins: number
+      votes: number
+    }
+  >
+}
+
+export interface PartyLeaderboardEntry {
+  rank: number
+  id: string
+  name: string
+  abbreviation?: string
+  logo_url?: string
+  color_primary?: string
+  total_candidates: number
+  total_elections_participated: number
+  total_wins: number
+}
+
+// ============================================
+// CANDIDATE PROFILES
+// ============================================
+
+export type CandidateProfileStatus = "active" | "inactive" | "suspended" | "deceased"
+export type CandidacyStatus = "nominated" | "confirmed" | "withdrawn" | "disqualified"
+
+export interface CandidateProfile {
+  id: string
+  organization_id: string
+  name: string
+  photo_url?: string
+  email?: string
+  phone?: string
+  date_of_birth?: string
+  party_id?: string
+  party?: string
+  bio?: string
+  manifesto?: string
+  policies?: Record<string, string[]>
+  experience?: Record<string, string>
+  endorsements?: string[]
+  education?: Array<{
+    institution: string
+    degree: string
+    year: string
+  }>
+  social_links?: Record<string, string>
+  status: CandidateProfileStatus
+  total_elections: number
+  total_wins: number
+  total_votes_received: number
+  highest_vote_percentage: number
+  last_election_date?: string
+  created_at: string
+  updated_at: string
+  election_history?: CandidateElectionHistory[]
+  // Joined fields
+  party_name?: string
+  party_abbreviation?: string
+}
+
+export interface CandidateElectionHistory {
+  candidate_profile_id: string
+  candidate_name: string
+  election_id: string
+  election_title: string
+  election_type: ElectionType
+  election_date: string
+  position_id: string
+  position_title: string
+  display_name: string
+  votes_received: number
+  vote_percentage: number
+  rank: number
+  is_winner: boolean
+  candidacy_status: CandidacyStatus
+  party_name?: string
+  party_abbreviation?: string
+}
+
+export interface CreateCandidateProfileInput {
+  name: string
+  photo_url?: string
+  email?: string
+  phone?: string
+  date_of_birth?: string
+  party_id?: string
+  party?: string
+  bio?: string
+  manifesto?: string
+  policies?: Record<string, string[]>
+  experience?: Record<string, string>
+  endorsements?: string[]
+  education?: Array<{
+    institution: string
+    degree: string
+    year: string
+  }>
+  social_links?: Record<string, string>
+}
+
+export interface UpdateCandidateProfileInput extends Partial<CreateCandidateProfileInput> {
+  status?: CandidateProfileStatus
+}
+
+export interface AssignCandidateInput {
+  candidate_profile_id: string
+  position_id: string
+  display_name?: string
+  campaign_photo_url?: string
+  campaign_slogan?: string
+  campaign_manifesto?: string
+  ballot_number?: number
+}
+
+export interface CandidateAssignment {
+  id: string
+  candidate_profile_id: string
+  position_id: string
+  election_id: string
+  display_name?: string
+  campaign_photo_url?: string
+  campaign_slogan?: string
+  campaign_manifesto?: string
+  ballot_number?: number
+  candidacy_status: CandidacyStatus
+  votes_received: number
+  vote_percentage: number
+  is_winner: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CandidateStats {
+  candidate: CandidateProfile
+  elections: {
+    total: number
+    wins: number
+    win_rate: number
+  }
+  votes: {
+    total: number
+    highest: number
+    highest_percentage: number
+    average: number
+  }
+  by_election_type: Record<
+    string,
+    {
+      count: number
+      wins: number
+      total_votes: number
+    }
+  >
+}
+
+export interface CandidateLeaderboardEntry {
+  rank: number
+  id: string
+  name: string
+  photo_url?: string
+  party_name?: string
+  party_abbreviation?: string
+  total_elections: number
+  total_wins: number
+  total_votes_received: number
+  win_rate: number
+}

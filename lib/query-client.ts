@@ -207,4 +207,56 @@ export const queryKeys = {
   health: {
     dashboard: ["health", "dashboard"] as const,
   },
+
+  // Elections
+  elections: {
+    all: (params?: any) => ["elections", "list", params] as const,
+    detail: (id: string) => ["elections", "detail", id] as const,
+    positions: (electionId: string) => ["elections", "detail", electionId, "positions"] as const,
+    candidates: (electionId: string, positionId: string) =>
+      ["elections", "detail", electionId, "positions", positionId, "candidates"] as const,
+    pollOptions: (electionId: string) =>
+      ["elections", "detail", electionId, "poll-options"] as const,
+    auditLog: (electionId: string) => ["elections", "detail", electionId, "audit-log"] as const,
+    results: (electionId: string) => ["elections", "detail", electionId, "results"] as const,
+    finalizedResults: (electionId: string) =>
+      ["elections", "detail", electionId, "results", "finalized"] as const,
+    analytics: (electionId: string) =>
+      ["elections", "detail", electionId, "analytics"] as const,
+    demographics: (electionId: string) =>
+      ["elections", "detail", electionId, "analytics", "demographics"] as const,
+    regionalResults: (electionId: string, positionId?: string) =>
+      ["elections", "detail", electionId, "analytics", "regional", positionId] as const,
+    trends: (electionId: string, granularity?: string) =>
+      ["elections", "detail", electionId, "analytics", "trends", granularity] as const,
+    turnout: (electionId: string) =>
+      ["elections", "detail", electionId, "analytics", "turnout"] as const,
+    predictions: (electionId: string) =>
+      ["elections", "detail", electionId, "analytics", "predictions"] as const,
+    comparison: (electionId: string, candidateIds: string[]) =>
+      ["elections", "detail", electionId, "analytics", "comparison", candidateIds] as const,
+    dashboard: () => ["elections", "dashboard"] as const,
+    activeDashboard: () => ["elections", "dashboard", "active"] as const,
+    voteStatus: (electionId: string) =>
+      ["elections", "detail", electionId, "vote-status"] as const,
+  },
+
+  // Political Parties
+  parties: {
+    all: (params?: any) => ["parties", "list", params] as const,
+    detail: (id: string) => ["parties", "detail", id] as const,
+    candidates: (partyId: string, params?: any) =>
+      ["parties", "detail", partyId, "candidates", params] as const,
+    stats: (partyId: string) => ["parties", "detail", partyId, "stats"] as const,
+    elections: (partyId: string) => ["parties", "detail", partyId, "elections"] as const,
+    leaderboard: (params?: any) => ["parties", "leaderboard", params] as const,
+  },
+
+  // Candidate Profiles
+  candidateProfiles: {
+    all: (params?: any) => ["candidate-profiles", "list", params] as const,
+    detail: (id: string) => ["candidate-profiles", "detail", id] as const,
+    stats: (id: string) => ["candidate-profiles", "detail", id, "stats"] as const,
+    leaderboard: (params?: any) => ["candidate-profiles", "leaderboard", params] as const,
+  },
 }
