@@ -227,14 +227,17 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Political Party</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={(value) => field.onChange(value === "independent" ? "" : value)}
+                        defaultValue={field.value || "independent"}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select party (or leave empty for Independent)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Independent</SelectItem>
+                          <SelectItem value="independent">Independent (No Party)</SelectItem>
                           {parties.map((party) => (
                             <SelectItem key={party.id} value={party.id}>
                               {party.name} {party.abbreviation ? `(${party.abbreviation})` : ""}
@@ -243,7 +246,7 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Leave empty if the candidate is independent
+                        Select Independent if the candidate has no party affiliation
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
