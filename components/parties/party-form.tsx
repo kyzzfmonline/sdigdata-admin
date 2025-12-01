@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/popover"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useCreateParty, useUpdateParty } from "@/hooks/parties"
 import type { PoliticalParty, CreatePartyInput, PartyStatus } from "@/lib/types"
 
@@ -44,7 +45,7 @@ const partySchema = z.object({
   slogan: z.string().optional(),
   founded_date: z.date().optional(),
   status: z.enum(["active", "inactive", "suspended", "dissolved"]),
-  logo_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  logo_url: z.string().optional(),
   color_primary: z.string().optional(),
   color_secondary: z.string().optional(),
   website: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -340,12 +341,17 @@ export function PartyForm({ party }: PartyFormProps) {
                   name="logo_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Logo URL</FormLabel>
+                      <FormLabel>Party Logo</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://example.com/logo.png" {...field} />
+                        <ImageUpload
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Upload party logo"
+                          maxSize={5}
+                        />
                       </FormControl>
                       <FormDescription>
-                        URL to the party's official logo
+                        Official logo of the political party
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

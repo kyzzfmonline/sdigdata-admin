@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/popover"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useCreateCandidateProfile, useUpdateCandidateProfile } from "@/hooks/candidates"
 import { useParties } from "@/hooks/parties"
 import type { CandidateProfile, CreateCandidateProfileInput, CandidateProfileStatus } from "@/lib/types"
@@ -43,7 +44,7 @@ const candidateSchema = z.object({
   date_of_birth: z.date().optional(),
   party_id: z.string().optional(),
   status: z.enum(["active", "inactive", "suspended", "deceased"]),
-  photo_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  photo_url: z.string().optional(),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   phone: z.string().optional(),
   bio: z.string().optional(),
@@ -254,12 +255,17 @@ export function CandidateForm({ candidate }: CandidateFormProps) {
                   name="photo_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Photo URL</FormLabel>
+                      <FormLabel>Photo</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://example.com/photo.jpg" {...field} />
+                        <ImageUpload
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Upload candidate photo"
+                          maxSize={5}
+                        />
                       </FormControl>
                       <FormDescription>
-                        URL to the candidate's official portrait photo
+                        Official portrait photo of the candidate
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
