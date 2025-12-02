@@ -427,7 +427,7 @@ export default function ElectionDetailPage({
 
                     {election.status === "active" && (
                       <Link
-                        href={`/public/elections/${id}`}
+                        href={`/vote/${id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

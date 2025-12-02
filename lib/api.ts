@@ -622,15 +622,15 @@ export const webhooksAPI = {
 export const publicFormsAPI = {
   // Get public form by ID
   getForm: (formId: string) =>
-    axios.get(`${API_BASE_URL}/public/forms/${formId}`),
+    axios.get(`${API_BASE_URL}/form/${formId}`),
 
   // Submit response to public form
   submit: (formId: string, data: Record<string, any>) =>
-    axios.post(`${API_BASE_URL}/public/forms/${formId}/submit`, { data }),
+    axios.post(`${API_BASE_URL}/form/${formId}/submit`, { data }),
 
   // Check form availability/status
   checkStatus: (formId: string) =>
-    axios.get(`${API_BASE_URL}/public/forms/${formId}/status`),
+    axios.get(`${API_BASE_URL}/form/${formId}/status`),
 }
 
 // ============================================
@@ -932,29 +932,29 @@ export const candidateProfilesAPI = {
 export const publicElectionsAPI = {
   // Get public election info
   getElection: (electionId: string) =>
-    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}`),
+    axios.get(`${API_BASE_URL}/v1/vote/${electionId}`),
 
   // Get election results (if visibility allows)
   getResults: (electionId: string) =>
-    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}/results`),
+    axios.get(`${API_BASE_URL}/v1/vote/${electionId}/results`),
 
   // Request OTP for phone verification
   requestOTP: (electionId: string, data: { phone: string }) =>
-    axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/request-otp`, data),
+    axios.post(`${API_BASE_URL}/v1/vote/${electionId}/request-otp`, data),
 
   // Verify voter (anonymous flow)
   verifyVoter: (
     electionId: string,
     data: { national_id?: string; phone?: string; otp?: string }
-  ) => axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/verify`, data),
+  ) => axios.post(`${API_BASE_URL}/v1/vote/${electionId}/verify`, data),
 
   // Cast anonymous vote
   castVote: (electionId: string, data: import("./types").CastVotesInput) =>
-    axios.post(`${API_BASE_URL}/v1/public/elections/${electionId}/vote`, data),
+    axios.post(`${API_BASE_URL}/v1/vote/${electionId}/vote`, data),
 
   // Check vote status with voter token
   checkVoteStatus: (electionId: string, voterToken: string) =>
-    axios.get(`${API_BASE_URL}/v1/public/elections/${electionId}/vote-status`, {
+    axios.get(`${API_BASE_URL}/v1/vote/${electionId}/vote-status`, {
       params: { voter_token: voterToken },
     }),
 }

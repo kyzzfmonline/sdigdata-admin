@@ -81,7 +81,7 @@ export default function PublicElectionPage() {
     const fetchElection = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/public/elections/${params.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/vote/${params.id}`,
           { signal: abortController.signal }
         )
         const result = await response.json()
@@ -114,7 +114,7 @@ export default function PublicElectionPage() {
   const getVoterToken = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/public/elections/${params.id}/verify`,
+        `${process.env.NEXT_PUBLIC_API_URL}/vote/${params.id}/verify`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -182,7 +182,7 @@ export default function PublicElectionPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/public/elections/${election.id}/vote`,
+        `${process.env.NEXT_PUBLIC_API_URL}/vote/${election.id}/vote`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

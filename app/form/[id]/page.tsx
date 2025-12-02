@@ -26,7 +26,7 @@ export default function PublicFormPage() {
       try {
         // Use the new public forms endpoint
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/public/forms/${params.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/form/${params.id}`,
           {
             signal: abortController.signal,
           }
@@ -67,7 +67,7 @@ export default function PublicFormPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/forms/${form.id}/responses`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/form/${form.id}/responses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

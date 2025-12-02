@@ -163,7 +163,7 @@ export function usePublicForm(slug: string | undefined) {
     queryKey: slug ? ["public-forms", slug] : [],
     queryFn: async () => {
       if (!slug) throw new Error("Form slug is required")
-      const response = await apiClient.get(`/public/forms/${slug}`)
+      const response = await apiClient.get(`/form/${slug}`)
       return response.data.data
     },
     enabled: !!slug,
@@ -174,7 +174,7 @@ export function usePublicForm(slug: string | undefined) {
 export function useSubmitPublicForm(slug: string) {
   return useMutation({
     mutationFn: async (data: PublicFormSubmission) => {
-      const response = await apiClient.post(`/public/forms/${slug}/submit`, data)
+      const response = await apiClient.post(`/form/${slug}/submit`, data)
       return response.data.data
     },
     onSuccess: () => {
@@ -192,7 +192,7 @@ export function useCheckPublicFormAccess(slug: string | undefined) {
     queryKey: slug ? ["public-forms", slug, "access"] : [],
     queryFn: async () => {
       if (!slug) throw new Error("Form slug is required")
-      const response = await apiClient.get(`/public/forms/${slug}/access`)
+      const response = await apiClient.get(`/form/${slug}/access`)
       return response.data.data as PublicFormAccess
     },
     enabled: !!slug,
@@ -250,7 +250,7 @@ export function useRegeneratePublicUrl(formId: string) {
 export function useCheckSlugAvailability() {
   return useMutation({
     mutationFn: async (data: { slug: string; form_id?: string }) => {
-      const response = await apiClient.post("/public/forms/check-slug", data)
+      const response = await apiClient.post("/form/check-slug", data)
       return response.data.data as {
         available: boolean
         suggestions?: string[]
@@ -273,7 +273,7 @@ export function usePublicFormsList(filters?: PublicFormsFilters) {
   return useQuery({
     queryKey: ["public-forms", "list", filters],
     queryFn: async () => {
-      const response = await apiClient.get("/public/forms", {
+      const response = await apiClient.get("/form", {
         params: filters,
       })
       return response.data.data
@@ -285,7 +285,7 @@ export function usePublicFormsList(filters?: PublicFormsFilters) {
 export function useTrackPublicFormView(slug: string) {
   return useMutation({
     mutationFn: async (data?: { referrer?: string; utm_params?: Record<string, string> }) => {
-      await apiClient.post(`/public/forms/${slug}/track-view`, data)
+      await apiClient.post(`/form/${slug}/track-view`, data)
     },
   })
 }
@@ -302,7 +302,7 @@ export function usePublicFormSubmissionConfirmation(
         throw new Error("Form slug and submission ID are required")
       }
       const response = await apiClient.get(
-        `/public/forms/${slug}/submissions/${submissionId}/confirmation`
+        `/form/${slug}/submissions/${submissionId}/confirmation`
       )
       return response.data.data
     },
@@ -314,7 +314,7 @@ export function usePublicFormSubmissionConfirmation(
 export function useSavePublicFormDraft(slug: string) {
   return useMutation({
     mutationFn: async (data: { form_data: Record<string, any>; step?: number }) => {
-      const response = await apiClient.post(`/public/forms/${slug}/save-draft`, data)
+      const response = await apiClient.post(`/form/${slug}/save-draft`, data)
       return response.data.data as {
         draft_id: string
         expires_at: string
@@ -331,7 +331,7 @@ export function usePublicFormDraft(slug: string | undefined, draftId: string | u
       if (!slug || !draftId) {
         throw new Error("Form slug and draft ID are required")
       }
-      const response = await apiClient.get(`/public/forms/${slug}/drafts/${draftId}`)
+      const response = await apiClient.get(`/form/${slug}/drafts/${draftId}`)
       return response.data.data
     },
     enabled: !!slug && !!draftId,
@@ -342,7 +342,7 @@ export function usePublicFormDraft(slug: string | undefined, draftId: string | u
 export function useReportPublicForm(slug: string) {
   return useMutation({
     mutationFn: async (data: { reason: string; details?: string; email?: string }) => {
-      const response = await apiClient.post(`/public/forms/${slug}/report`, data)
+      const response = await apiClient.post(`/form/${slug}/report`, data)
       return response.data.data
     },
     onSuccess: () => {
