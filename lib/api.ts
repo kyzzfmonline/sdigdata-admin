@@ -958,3 +958,229 @@ export const publicElectionsAPI = {
       params: { voter_token: voterToken },
     }),
 }
+
+// ============================================
+// GEOGRAPHIC API
+// ============================================
+export const geographicAPI = {
+  // Regions
+  listRegions: () => apiClient.get("/v1/geographic/regions"),
+  createRegion: (data: { name: string; code: string; metadata?: Record<string, unknown> }) =>
+    apiClient.post("/v1/geographic/regions", data),
+  getRegion: (regionId: string) => apiClient.get(`/v1/geographic/regions/${regionId}`),
+  updateRegion: (regionId: string, data: { name?: string; code?: string; metadata?: Record<string, unknown> }) =>
+    apiClient.patch(`/v1/geographic/regions/${regionId}`, data),
+  deleteRegion: (regionId: string) => apiClient.delete(`/v1/geographic/regions/${regionId}`),
+  getRegionBreakdown: (regionId: string) => apiClient.get(`/v1/geographic/regions/${regionId}/breakdown`),
+
+  // Constituencies
+  listConstituencies: (regionId?: string) =>
+    apiClient.get("/v1/geographic/constituencies", { params: { region_id: regionId } }),
+  createConstituency: (data: { name: string; code: string; region_id: string; metadata?: Record<string, unknown> }) =>
+    apiClient.post("/v1/geographic/constituencies", data),
+  getConstituency: (constituencyId: string) => apiClient.get(`/v1/geographic/constituencies/${constituencyId}`),
+
+  // Electoral Areas
+  listElectoralAreas: (constituencyId?: string) =>
+    apiClient.get("/v1/geographic/electoral-areas", { params: { constituency_id: constituencyId } }),
+  createElectoralArea: (data: { name: string; code: string; constituency_id: string; metadata?: Record<string, unknown> }) =>
+    apiClient.post("/v1/geographic/electoral-areas", data),
+
+  // Polling Stations
+  listPollingStations: (params?: {
+    electoral_area_id?: string
+    constituency_id?: string
+    region_id?: string
+    limit?: number
+    offset?: number
+  }) => apiClient.get("/v1/geographic/polling-stations", { params }),
+  createPollingStation: (data: {
+    name: string
+    code: string
+    electoral_area_id: string
+    address?: string
+    gps_coordinates?: string
+    registered_voters?: number
+    metadata?: Record<string, unknown>
+  }) => apiClient.post("/v1/geographic/polling-stations", data),
+  getPollingStation: (stationId: string) => apiClient.get(`/v1/geographic/polling-stations/${stationId}`),
+  updatePollingStation: (stationId: string, data: {
+    name?: string
+    address?: string
+    gps_coordinates?: string
+    registered_voters?: number
+    metadata?: Record<string, unknown>
+  }) => apiClient.patch(`/v1/geographic/polling-stations/${stationId}`, data),
+
+  // Stats
+  getHierarchyStats: () => apiClient.get("/v1/geographic/stats"),
+}
+
+// ============================================
+// COLLATION API
+// ============================================
+export const collationAPI = {
+  // Result Sheets
+  createResultSheet: (data: {
+    election_id: string
+    polling_station_id?: string
+    collation_center_id?: string
+    sheet_type: string
+  }) => apiClient.post("/v1/collation/sheets", data),
+
+  listResultSheets: (electionId: string, params?: {
+    sheet_type?: string
+    status?: string
+    collation_center_id?: string
+    constituency_id?: string
+    region_id?: string
+    limit?: number
+    offset?: number
+  }) => apiClient.get("/v1/collation/sheets", { params: { election_id: electionId, ...params } }),
+
+  getResultSheet: (sheetId: string) => apiClient.get(`/v1/collation/sheets/${sheetId}`),
+
+  updateSheetTotals: (sheetId: string, data: {
+    total_registered_voters?: number
+    total_votes_cast?: number
+    total_valid_votes?: number
+    total_rejected_votes?: number
+  }) => apiClient.patch(`/v1/collation/sheets/${sheetId}/totals`, data),
+
+  // Result Entries
+  addResultEntry: (sheetId: string, data: {
+    position_id?: string
+    candidate_id?: string
+    poll_option_id?: string
+    votes: number
+    votes_in_words?: string
+  }) => apiClient.post(`/v1/collation/sheets/${sheetId}/entries`, data),
+
+  bulkAddEntries: (sheetId: string, entries: Array<{
+    position_id?: string
+    candidate_id?: string
+    poll_option_id?: string
+    votes: number
+    votes_in_words?: string
+  }>) => apiClient.post(`/v1/collation/sheets/${sheetId}/entries/bulk`, { entries }),
+
+  getResultEntries: (sheetId: string) => apiClient.get(`/v1/collation/sheets/${sheetId}/entries`),
+
+  // Attachments
+  addAttachment: (sheetId: string, data: {
+    attachment_type: string
+    file_url: string
+    file_name?: string
+  }) => apiClient.post(`/v1/collation/sheets/${sheetId}/attachments`, data),
+
+  getAttachments: (sheetId: string) => apiClient.get(`/v1/collation/sheets/${sheetId}/attachments`),
+
+  deleteAttachment: (attachmentId: string) => apiClient.delete(`/v1/collation/attachments/${attachmentId}`),
+
+  // Workflow
+  submitSheet: (sheetId: string) => apiClient.post(`/v1/collation/sheets/${sheetId}/submit`),
+  verifySheet: (sheetId: string, notes?: string) =>
+    apiClient.post(`/v1/collation/sheets/${sheetId}/verify`, { notes }),
+  approveSheet: (sheetId: string, notes?: string) =>
+    apiClient.post(`/v1/collation/sheets/${sheetId}/approve`, { notes }),
+  certifySheet: (sheetId: string, notes?: string) =>
+    apiClient.post(`/v1/collation/sheets/${sheetId}/certify`, { notes }),
+  rejectSheet: (sheetId: string, reason: string) =>
+    apiClient.post(`/v1/collation/sheets/${sheetId}/reject`, { reason }),
+  getWorkflowHistory: (sheetId: string) => apiClient.get(`/v1/collation/sheets/${sheetId}/history`),
+
+  // Officers
+  createOfficer: (data: {
+    user_id: string
+    officer_type: string
+    national_id?: string
+    phone?: string
+  }) => apiClient.post("/v1/collation/officers", data),
+
+  listOfficers: (params?: { officer_type?: string; is_active?: boolean; limit?: number; offset?: number }) =>
+    apiClient.get("/v1/collation/officers", { params }),
+
+  getOfficer: (officerId: string) => apiClient.get(`/v1/collation/officers/${officerId}`),
+
+  assignOfficer: (data: {
+    officer_id: string
+    election_id: string
+    polling_station_id?: string
+    collation_center_id?: string
+    role: string
+  }) => apiClient.post("/v1/collation/officers/assign", data),
+
+  getElectionAssignments: (electionId: string, params?: { officer_id?: string; polling_station_id?: string }) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/assignments`, { params }),
+
+  removeAssignment: (assignmentId: string) => apiClient.delete(`/v1/collation/assignments/${assignmentId}`),
+
+  // Collation Centers
+  createCollationCenter: (data: {
+    name: string
+    center_type: string
+    electoral_area_id?: string
+    constituency_id?: string
+    region_id?: string
+    address?: string
+    gps_coordinates?: string
+  }) => apiClient.post("/v1/collation/centers", data),
+
+  listCollationCenters: (params?: {
+    center_type?: string
+    region_id?: string
+    constituency_id?: string
+    limit?: number
+    offset?: number
+  }) => apiClient.get("/v1/collation/centers", { params }),
+
+  // Aggregation
+  aggregateResults: (electionId: string, level: string, areaId?: string) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/aggregate`, {
+      params: { level, area_id: areaId },
+    }),
+
+  saveAggregation: (electionId: string, params: {
+    level: string
+    electoral_area_id?: string
+    constituency_id?: string
+    region_id?: string
+  }) => apiClient.post(`/v1/collation/elections/${electionId}/aggregate/save`, null, { params }),
+
+  getCollationResults: (electionId: string, level?: string) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/results`, { params: { level } }),
+
+  // Dashboard & Live Feed
+  getCollationDashboard: (electionId: string) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/dashboard`),
+
+  getSubmissionProgress: (electionId: string, params?: { region_id?: string; constituency_id?: string }) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/progress`, { params }),
+
+  getLiveFeed: (electionId: string, limit?: number) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/live-feed`, { params: { limit } }),
+
+  // Incidents
+  reportIncident: (data: {
+    election_id: string
+    polling_station_id?: string
+    collation_center_id?: string
+    incident_type: string
+    severity: string
+    description: string
+    evidence_urls?: string[]
+  }) => apiClient.post("/v1/collation/incidents", data),
+
+  listIncidents: (electionId: string, params?: { status?: string; severity?: string; limit?: number }) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/incidents`, { params }),
+
+  resolveIncident: (incidentId: string, resolutionNotes: string) =>
+    apiClient.post(`/v1/collation/incidents/${incidentId}/resolve`, { resolution_notes: resolutionNotes }),
+
+  // Discrepancies
+  getDiscrepancies: (electionId: string, status?: string) =>
+    apiClient.get(`/v1/collation/elections/${electionId}/discrepancies`, { params: { status } }),
+
+  resolveDiscrepancy: (discrepancyId: string, resolutionNotes: string) =>
+    apiClient.post(`/v1/collation/discrepancies/${discrepancyId}/resolve`, { resolution_notes: resolutionNotes }),
+}

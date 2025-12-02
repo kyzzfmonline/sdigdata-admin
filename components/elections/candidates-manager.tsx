@@ -26,21 +26,25 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Edit, Trash2, User } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { CandidateProfileSelector } from "@/components/elections/candidate-profile-selector"
+import { Plus, Edit, Trash2, User, UserPlus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   useCreateCandidate,
   useUpdateCandidate,
   useDeleteCandidate,
 } from "@/hooks/elections"
-import type { Candidate } from "@/lib/types"
+import { useAssignCandidateToElection } from "@/hooks/candidates"
+import type { Candidate, CandidateProfile } from "@/lib/types"
 
 const candidateSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   party: z.string().optional(),
   bio: z.string().optional(),
   manifesto: z.string().optional(),
-  photo_url: z.string().url().optional().or(z.literal("")),
+  photo_url: z.string().optional(),
   display_order: z.coerce.number().optional(),
 })
 
@@ -61,10 +65,13 @@ export function CandidatesManager({
 }: CandidatesManagerProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null)
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
+  const [selectedProfile, setSelectedProfile] = useState<CandidateProfile | null>(null)
 
   const createCandidate = useCreateCandidate()
   const updateCandidate = useUpdateCandidate()
   const deleteCandidate = useDeleteCandidate()
+  const assignCandidate = useAssignCandidateToElection()
 
   const form = useForm<CandidateFormData>({
     resolver: zodResolver(candidateSchema),
@@ -78,6 +85,23 @@ export function CandidatesManager({
     },
   })
 
+  // When a candidate profile is selected, populate the form with their data
+  const handleProfileSelect = (profileId: string, profile?: CandidateProfile) => {
+    setSelectedProfileId(profileId)
+    setSelectedProfile(profile || null)
+
+    if (profile) {
+      form.reset({
+        name: profile.name,
+        party: profile.party || profile.party_name || "",
+        bio: profile.bio || "",
+        manifesto: profile.manifesto || "",
+        photo_url: profile.photo_url || "",
+        display_order: candidates.length + 1,
+      })
+    }
+  }
+
   const onSubmit = async (data: CandidateFormData) => {
     const cleanData = {
       ...data,
@@ -85,6 +109,7 @@ export function CandidatesManager({
     }
 
     if (editingCandidate) {
+      // Update existing candidate
       updateCandidate.mutate(
         {
           electionId,
@@ -99,7 +124,34 @@ export function CandidatesManager({
           },
         }
       )
+    } else if (selectedProfileId && selectedProfile) {
+      // Assign a candidate profile to this position
+      assignCandidate.mutate(
+        {
+          candidate_profile_id: selectedProfileId,
+          position_id: positionId,
+          display_name: data.name !== selectedProfile.name ? data.name : undefined,
+          campaign_photo_url: data.photo_url !== selectedProfile.photo_url ? data.photo_url : undefined,
+          campaign_manifesto: data.manifesto !== selectedProfile.manifesto ? data.manifesto : undefined,
+        },
+        {
+          onSuccess: () => {
+            setIsAddDialogOpen(false)
+            setSelectedProfileId(null)
+            setSelectedProfile(null)
+            form.reset({
+              name: "",
+              party: "",
+              bio: "",
+              manifesto: "",
+              photo_url: "",
+              display_order: candidates.length + 2,
+            })
+          },
+        }
+      )
     } else {
+      // Create a new candidate directly (legacy fallback)
       createCandidate.mutate(
         {
           electionId,
@@ -125,6 +177,8 @@ export function CandidatesManager({
 
   const handleEdit = (candidate: Candidate) => {
     setEditingCandidate(candidate)
+    setSelectedProfileId(null)
+    setSelectedProfile(null)
     form.reset({
       name: candidate.name,
       party: candidate.party || "",
@@ -144,10 +198,17 @@ export function CandidatesManager({
   const handleCloseDialog = () => {
     setIsAddDialogOpen(false)
     setEditingCandidate(null)
+    setSelectedProfileId(null)
+    setSelectedProfile(null)
     form.reset()
   }
 
   const sortedCandidates = [...candidates].sort((a, b) => a.display_order - b.display_order)
+
+  // Get IDs of candidates already in this position (to exclude from selector)
+  const existingCandidateIds = candidates.map(c => c.id)
+
+  const isPending = createCandidate.isPending || updateCandidate.isPending || assignCandidate.isPending
 
   return (
     <div className="space-y-4">
@@ -160,7 +221,7 @@ export function CandidatesManager({
           }}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline" className="gap-1">
-                <Plus className="h-3 w-3" />
+                <UserPlus className="h-3 w-3" />
                 Add Candidate
               </Button>
             </DialogTrigger>
@@ -172,9 +233,28 @@ export function CandidatesManager({
                 <DialogDescription>
                   {editingCandidate
                     ? "Update the candidate's information"
-                    : "Add a new candidate for this position"}
+                    : "Select an existing candidate or create a new one for this position"}
                 </DialogDescription>
               </DialogHeader>
+
+              {/* Candidate Profile Selector - only show when adding new */}
+              {!editingCandidate && (
+                <div className="space-y-2 pb-4 border-b">
+                  <label className="text-sm font-medium">Select Candidate Profile</label>
+                  <CandidateProfileSelector
+                    value={selectedProfileId || undefined}
+                    onChange={handleProfileSelect}
+                    placeholder="Search and select a candidate..."
+                    excludeIds={existingCandidateIds}
+                  />
+                  {selectedProfile && (
+                    <p className="text-xs text-muted-foreground">
+                      Selected candidate's details are pre-filled below. You can customize for this election.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
@@ -182,7 +262,9 @@ export function CandidatesManager({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>
+                          {selectedProfile ? "Display Name (for this election)" : "Full Name"}
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -191,28 +273,27 @@ export function CandidatesManager({
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="party"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Party / Affiliation</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Independent" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {selectedProfile && (
+                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                      Party: {selectedProfile.party_name || selectedProfile.party || "Independent"}
+                    </div>
+                  )}
 
                   <FormField
                     control={form.control}
                     name="photo_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Photo URL</FormLabel>
+                        <FormLabel>
+                          {selectedProfile ? "Campaign Photo (optional override)" : "Photo"}
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="https://example.com/photo.jpg" {...field} />
+                          <ImageUpload
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Upload candidate photo"
+                            maxSize={5}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -242,7 +323,9 @@ export function CandidatesManager({
                     name="manifesto"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Manifesto</FormLabel>
+                        <FormLabel>
+                          {selectedProfile ? "Campaign Manifesto (for this election)" : "Manifesto"}
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Key policies and promises..."
@@ -261,12 +344,14 @@ export function CandidatesManager({
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createCandidate.isPending || updateCandidate.isPending}
+                      disabled={isPending}
                     >
-                      {createCandidate.isPending || updateCandidate.isPending
+                      {isPending
                         ? "Saving..."
                         : editingCandidate
                         ? "Update"
+                        : selectedProfile
+                        ? "Add to Position"
                         : "Add Candidate"}
                     </Button>
                   </DialogFooter>
@@ -304,9 +389,9 @@ export function CandidatesManager({
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium truncate">{candidate.name}</h5>
                         {candidate.party && (
-                          <p className="text-sm text-muted-foreground truncate">
+                          <Badge variant="secondary" className="text-xs mt-1">
                             {candidate.party}
-                          </p>
+                          </Badge>
                         )}
                         {candidate.bio && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">

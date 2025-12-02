@@ -36,6 +36,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useCreateElection, useUpdateElection } from "@/hooks/elections"
 import { useStore } from "@/lib/store"
 import type { Election, CreateElectionInput } from "@/lib/types"
@@ -554,12 +555,17 @@ export function ElectionForm({ election }: ElectionFormProps) {
                   name="branding.logo_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Logo URL</FormLabel>
+                      <FormLabel>Logo</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://example.com/logo.png" {...field} />
+                        <ImageUpload
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Upload election logo"
+                          maxSize={5}
+                        />
                       </FormControl>
                       <FormDescription>
-                        URL to your organization's logo (displayed on ballots)
+                        Organization logo displayed on ballots
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -62,10 +62,10 @@ export function ImageUpload({
       try {
         // Get presigned URL from backend
         const response = await filesAPI.presign(file.name, file.type, "PUT")
-        const { presigned_url, file_url } = response.data.data
+        const { upload_url, file_url } = response.data
 
         // Upload file directly to S3/Spaces
-        await fetch(presigned_url, {
+        await fetch(upload_url, {
           method: "PUT",
           body: file,
           headers: {

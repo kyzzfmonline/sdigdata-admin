@@ -991,3 +991,263 @@ export interface CandidateLeaderboardEntry {
   total_votes_received: number
   win_rate: number
 }
+
+// ============================================
+// COLLATION SYSTEM TYPES
+// ============================================
+
+export interface Region {
+  id: string
+  name: string
+  code: string
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface Constituency {
+  id: string
+  name: string
+  code: string
+  region_id: string
+  region_name?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface ElectoralArea {
+  id: string
+  name: string
+  code: string
+  constituency_id: string
+  constituency_name?: string
+  region_name?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface PollingStation {
+  id: string
+  name: string
+  code: string
+  electoral_area_id: string
+  electoral_area_name?: string
+  constituency_name?: string
+  region_name?: string
+  address?: string
+  gps_coordinates?: string
+  registered_voters: number
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface CollationCenter {
+  id: string
+  name: string
+  center_type: "electoral_area" | "constituency" | "regional" | "national"
+  electoral_area_id?: string
+  constituency_id?: string
+  region_id?: string
+  address?: string
+  gps_coordinates?: string
+  electoral_area_name?: string
+  constituency_name?: string
+  region_name?: string
+  created_at: string
+}
+
+export interface CollationOfficer {
+  id: string
+  user_id: string
+  officer_type: "presiding" | "returning" | "deputy_returning" | "collation_clerk"
+  national_id?: string
+  phone?: string
+  is_active: boolean
+  username?: string
+  email?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface OfficerAssignment {
+  id: string
+  officer_id: string
+  election_id: string
+  polling_station_id?: string
+  collation_center_id?: string
+  role: "presiding_officer" | "returning_officer" | "collation_clerk"
+  officer_name?: string
+  officer_type?: string
+  polling_station_name?: string
+  polling_station_code?: string
+  collation_center_name?: string
+  created_at: string
+}
+
+export type ResultSheetStatus = "draft" | "submitted" | "verified" | "approved" | "certified"
+export type ResultSheetType = "polling_station" | "electoral_area" | "constituency" | "regional" | "national"
+
+export interface ResultSheet {
+  id: string
+  election_id: string
+  polling_station_id?: string
+  collation_center_id?: string
+  sheet_type: ResultSheetType
+  status: ResultSheetStatus
+  total_registered_voters?: number
+  total_votes_cast?: number
+  total_valid_votes?: number
+  total_rejected_votes?: number
+  polling_station_name?: string
+  polling_station_code?: string
+  collation_center_name?: string
+  electoral_area_name?: string
+  constituency_name?: string
+  region_name?: string
+  election_title?: string
+  created_by: string
+  created_by_username?: string
+  submitted_at?: string
+  submitted_by?: string
+  verified_at?: string
+  verified_by?: string
+  approved_at?: string
+  approved_by?: string
+  metadata?: Record<string, unknown>
+  created_at: string
+  updated_at?: string
+}
+
+export interface ResultSheetEntry {
+  id: string
+  result_sheet_id: string
+  position_id?: string
+  candidate_id?: string
+  poll_option_id?: string
+  votes: number
+  votes_in_words?: string
+  position_title?: string
+  candidate_name?: string
+  candidate_party?: string
+  poll_option_text?: string
+  created_at: string
+}
+
+export interface ResultSheetAttachment {
+  id: string
+  result_sheet_id: string
+  attachment_type: "pink_sheet" | "photo" | "signature" | "other"
+  file_url: string
+  file_name?: string
+  uploaded_by: string
+  uploaded_by_username?: string
+  uploaded_at: string
+}
+
+export interface CollationWorkflowLog {
+  id: string
+  result_sheet_id: string
+  action: string
+  performed_by: string
+  performed_by_username?: string
+  notes?: string
+  metadata?: Record<string, unknown>
+  performed_at: string
+}
+
+export interface CollationIncident {
+  id: string
+  election_id: string
+  polling_station_id?: string
+  collation_center_id?: string
+  incident_type: "violence" | "equipment_failure" | "irregularity" | "protest" | "other"
+  severity: "low" | "medium" | "high" | "critical"
+  description: string
+  status: "reported" | "investigating" | "resolved"
+  evidence_urls?: string[]
+  reported_by: string
+  reported_by_username?: string
+  resolved_by?: string
+  resolved_by_username?: string
+  resolved_at?: string
+  resolution_notes?: string
+  polling_station_name?: string
+  collation_center_name?: string
+  reported_at: string
+}
+
+export interface CollationDiscrepancy {
+  id: string
+  result_sheet_id: string
+  discrepancy_type: string
+  expected_value?: string
+  actual_value?: string
+  description: string
+  status: "detected" | "investigating" | "resolved"
+  resolved_by?: string
+  resolved_by_username?: string
+  resolved_at?: string
+  resolution_notes?: string
+  sheet_type?: string
+  polling_station_name?: string
+  detected_at: string
+}
+
+export interface CollationDashboard {
+  election: {
+    id: string
+    title: string
+    status: string
+  }
+  summary: {
+    total_stations: number
+    completed: number
+    in_progress: number
+    pending: number
+    completion_percentage: number
+  }
+  status_breakdown: {
+    draft: number
+    submitted: number
+    verified: number
+    approved: number
+    certified: number
+  }
+  regional_breakdown: Array<{
+    region_id: string
+    region_name: string
+    total_stations: number
+    completed_stations: number
+    total_votes: number
+  }>
+  top_candidates: Array<{
+    candidate_name: string
+    party: string
+    total_votes: number
+  }>
+  last_updated: string
+}
+
+export interface CollationLiveFeedItem {
+  id: string
+  action: string
+  performed_at: string
+  notes?: string
+  performed_by: string
+  sheet_type: string
+  polling_station_name?: string
+  polling_station_code?: string
+  electoral_area_name?: string
+  constituency_name?: string
+  region_name?: string
+}
+
+export interface SubmissionProgress {
+  total_stations: number
+  sheets_created: number
+  drafts: number
+  submitted: number
+  verified: number
+  approved: number
+  certified: number
+  completion_rate: number
+}
