@@ -72,7 +72,7 @@ export function FormsListTable() {
   }
 
   const handleShare = async (form: Form) => {
-    const shareUrl = `${window.location.origin}/public/forms/${form.id}`
+    const shareUrl = `${window.location.origin}/form/${form.id}`
 
     try {
       await navigator.clipboard.writeText(shareUrl)

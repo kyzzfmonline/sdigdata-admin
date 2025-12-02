@@ -91,8 +91,8 @@ export default function PublicFormPage() {
   };
 
   const publicUrl = settings?.custom_slug
-    ? `${window.location.origin}/public/forms/${settings.custom_slug}`
-    : `${window.location.origin}/public/forms/${formId}`;
+    ? `${window.location.origin}/form/${settings.custom_slug}`
+    : `${window.location.origin}/form/${formId}`;
 
   return (
     <LayoutWrapper>
