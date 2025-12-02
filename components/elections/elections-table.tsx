@@ -379,7 +379,7 @@ export function ElectionsTable() {
                               </>
                             )}
 
-                            {hasPermission("elections:manage") && election.status === "draft" && (
+                            {hasPermission("elections:delete") && (
                               <DropdownMenuItem
                                 onClick={() => handleDelete(election)}
                                 className="text-destructive"
