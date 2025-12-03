@@ -22,6 +22,7 @@ import {
   Vote,
   Flag,
   User,
+  Calculator,
 } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { usePermissions } from "@/lib/permission-context"
@@ -79,6 +80,14 @@ const adminNavigation = [
     description: "Candidate Profiles",
     badge: null,
     permission: "elections:read",
+  },
+  {
+    name: "Collation",
+    href: "/collation",
+    icon: Calculator,
+    description: "Results Collation",
+    badge: null,
+    permission: "collation:read",
   },
   {
     name: "Responses",
@@ -213,7 +222,7 @@ export function Sidebar({ onNavigate, isCollapsed = false, onToggleCollapse }: S
   // Separate filtered admin nav into sections
   const overviewItems = filteredAdminNav.filter((item) => item.href === "/dashboard")
   const contentItems = filteredAdminNav.filter((item) =>
-    ["/forms", "/templates", "/elections", "/parties", "/candidates", "/responses"].includes(item.href)
+    ["/forms", "/templates", "/elections", "/parties", "/candidates", "/collation", "/responses"].includes(item.href)
   )
   const userItems = filteredAdminNav.filter((item) => item.href === "/users")
   const analyticsItems = filteredAdminNav.filter((item) => item.href === "/analytics")
