@@ -183,3 +183,45 @@ export function useDeleteParty() {
     },
   })
 }
+
+export function useDeletedParties(params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ["parties", "deleted", params],
+    queryFn: async () => {
+      const response = await politicalPartiesAPI.getDeleted(params)
+      return response.data.data as {
+        parties: PoliticalParty[]
+        total: number
+        limit: number
+        offset: number
+      }
+    },
+  })
+}
+
+export function useHardDeleteParty() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await politicalPartiesAPI.hardDelete(id)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.parties.all() })
+      queryClient.invalidateQueries({ queryKey: ["parties", "deleted"] })
+      toast({
+        title: "Success",
+        description: "Political party permanently deleted",
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to permanently delete party",
+        variant: "destructive",
+      })
+    },
+  })
+}

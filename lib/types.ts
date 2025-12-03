@@ -767,6 +767,8 @@ export interface PoliticalParty {
   total_elections_participated: number
   total_wins: number
   status: PartyStatus
+  deleted?: boolean
+  deleted_at?: string
   created_at: string
   updated_at: string
   election_history?: PartyElectionHistory[]

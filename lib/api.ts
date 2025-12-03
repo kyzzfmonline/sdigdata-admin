@@ -852,6 +852,13 @@ export const politicalPartiesAPI = {
   // Delete party (soft delete)
   delete: (id: string) => apiClient.delete(`/v1/political-parties/${id}`),
 
+  // Permanently delete party (hard delete - only works for soft-deleted parties)
+  hardDelete: (id: string) => apiClient.delete(`/v1/political-parties/${id}/permanent`),
+
+  // List soft-deleted parties
+  getDeleted: (params?: { limit?: number; offset?: number }) =>
+    apiClient.get("/v1/political-parties/deleted/list", { params }),
+
   // Get party candidates
   getCandidates: (
     partyId: string,
